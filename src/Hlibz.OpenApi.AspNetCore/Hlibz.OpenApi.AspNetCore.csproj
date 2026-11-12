@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Label="NuGet metadata">
+    <PackageId>Hlibz.OpenApi.AspNetCore</PackageId>
+    <Description>Transformers for Microsoft.AspNetCore.OpenApi: custom validation attributes that describe themselves in the schema (IOpenApiRule), strongly-typed IDs published as their inner value, a bearer (or any) security scheme marked on exactly the endpoints that require authorization, StyleCop's "Gets or sets" wording stripped from descriptions, and several OpenAPI documents registered in one call, one per endpoint group.</Description>
+    <PackageTags>openapi;aspnetcore;minimal-api;transformers;validation;strongly-typed-ids;security;redoc</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <!--
+    Microsoft.AspNetCore.OpenApi's XML comment generator would compile this library's own doc
+    comments (a cache and transformers nothing calls) into the package, so it is taken off the
+    compiler's analyzers. ExcludeAssets="analyzers" doesn't stop it. Apps get the generator from
+    their own direct reference, as the README says.
+  -->
+  <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Hlibz.OpenApi.AspNetCore.Tests" />
+  </ItemGroup>
+
+</Project>

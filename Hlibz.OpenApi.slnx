@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Atlas.Api/Atlas.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Hlibz.OpenApi.AspNetCore/Hlibz.OpenApi.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Hlibz.OpenApi.AspNetCore.Tests/Hlibz.OpenApi.AspNetCore.Tests.csproj" />
+  </Folder>
+</Solution>

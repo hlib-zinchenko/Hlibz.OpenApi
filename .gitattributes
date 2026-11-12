@@ -1,0 +1,3 @@
+# Normalize every text file to LF, both in the repo and on checkout, regardless of the
+# local core.autocrlf setting. Matches end_of_line = lf in .editorconfig.
+* text=auto eol=lf

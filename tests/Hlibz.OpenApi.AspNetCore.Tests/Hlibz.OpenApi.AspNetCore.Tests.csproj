@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+        On, so the tests see what Microsoft.AspNetCore.OpenApi's XML comment generator emits. The
+        summaries on test models are test data, not documentation, so StyleCop's documentation
+        and ordering rules are off.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;SA1201;SA1611;SA1615;SA1649;ASP0029</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <!-- Direct, as in an app: its XML comment generator is an analyzer, which doesn't flow transitively. -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hlibz.OpenApi.AspNetCore\Hlibz.OpenApi.AspNetCore.csproj" />
+  </ItemGroup>
+
+</Project>

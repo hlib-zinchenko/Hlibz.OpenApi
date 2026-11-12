@@ -1,0 +1,18 @@
+<Project>
+
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+    <!--
+        Samples are apps, not packages: one target framework, never packed. They keep
+        GenerateDocumentationFile on, because their XML summaries are what the OpenAPI documents
+        show; StyleCop's documentation rules are off, since a summary is all a sample type needs.
+    -->
+    <PropertyGroup>
+        <TargetFrameworks></TargetFrameworks>
+        <TargetFramework>net11.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591;SA1611;SA1615</NoWarn>
+    </PropertyGroup>
+
+</Project>

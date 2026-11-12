@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <!--
+      Direct, as every app needs it: Microsoft.AspNetCore.OpenApi's XML comment generator is an
+      analyzer, and analyzers don't flow through Hlibz.OpenApi.AspNetCore's reference.
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Hlibz.MinimalApi.Endpoints" />
+    <PackageReference Include="Hlibz.Redoc.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hlibz.OpenApi.AspNetCore\Hlibz.OpenApi.AspNetCore.csproj" />
+  </ItemGroup>
+
+</Project>

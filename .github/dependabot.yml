@@ -1,0 +1,26 @@
+# Weekly, grouped: one PR for all NuGet updates, one for all GitHub Actions.
+# CI runs the tests on every PR, so a green check is what makes these safe to merge.
+# Microsoft.AspNetCore.OpenApi is a deliberate minimum per target framework (see
+# Directory.Packages.props), never bumped: a new major means a new target framework, by hand.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: Microsoft.AspNetCore.OpenApi
+    groups:
+      nuget:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]

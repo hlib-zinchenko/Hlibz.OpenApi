@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            10.0.x
+            11.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+      - name: Pack
+        run: dotnet pack --no-build --configuration Release --output ./artifacts
+
+      # Each package must carry the README and icon nuget.org shows.
+      - name: Package contents
+        run: |
+          for package in ./artifacts/*.nupkg; do
+            echo "$package"
+            unzip -l "$package" > contents.txt
+            grep -qE " README\.md$" contents.txt
+            grep -qE " icon\.png$" contents.txt
+            unzip -p "$package" '*.nuspec' > package.nuspec
+            grep -q "<readme>README.md</readme>" package.nuspec
+            grep -q "<icon>icon.png</icon>" package.nuspec
+          done
+          test "$(ls ./artifacts/*.nupkg | wc -l)" -eq 1

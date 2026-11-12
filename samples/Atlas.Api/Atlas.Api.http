@@ -1,0 +1,76 @@
+# Requests against the Atlas sample (dotnet run --project samples/Atlas.Api).
+# Each one matches something the OpenAPI documents say; the comment says what.
+
+@host = http://localhost:5290
+
+### The documents themselves
+GET {{host}}/openapi/locations.json
+
+###
+GET {{host}}/openapi/locations-admin.json
+
+### Anonymous: no lock in the docs
+GET {{host}}/api/countries
+
+### A CountryId route parameter, documented as a uuid string (Ukraine, a seeded id)
+GET {{host}}/api/countries/00000000-0000-0000-0000-000000000001
+
+### A CityId route parameter, documented as an int32
+GET {{host}}/api/cities/1
+
+### [AsParameters] filters: arrays of IDs and codes, each with uniqueItems
+GET {{host}}/api/cities?codes=UA&codes=JP&minPopulation=1000000
+
+### The same, by country ids (Ukraine and Chile)
+GET {{host}}/api/cities?countryIds=00000000-0000-0000-0000-000000000001&countryIds=00000000-0000-0000-0000-000000000003
+
+### 400: codes lists UA twice ([DistinctItems], "No item may appear twice.")
+# Every 400 below is the HttpValidationProblemDetails the documents list (AddValidationProblems).
+GET {{host}}/api/cities?codes=UA&codes=UA
+
+### 400: the cross-field rule on SearchCitiesQuery, shown in the operation's description
+GET {{host}}/api/cities?minPopulation=10&maxPopulation=1
+
+### 401: the lock in the docs means it
+POST {{host}}/api/cities/suggestions
+Content-Type: application/json
+
+{ "countryId": "00000000-0000-0000-0000-000000000001", "name": "Odesa" }
+
+### 400 as a signed-in user: [NotDefault] on countryId ("Must not be the empty id.")
+POST {{host}}/api/cities/suggestions
+Authorization: Bearer demo-user
+Content-Type: application/json
+
+{ "countryId": "00000000-0000-0000-0000-000000000000", "name": "Odesa" }
+
+### 202
+POST {{host}}/api/cities/suggestions
+Authorization: Bearer demo-user
+Content-Type: application/json
+
+{ "countryId": "00000000-0000-0000-0000-000000000001", "name": "Odesa" }
+
+### 403: a user, not an admin
+POST {{host}}/api/admin/countries
+Authorization: Bearer demo-user
+Content-Type: application/json
+
+{ "code": "PL", "name": "Poland", "continent": "Europe" }
+
+### 400 with the API key (admin document only): [CountryCode] and [DistinctItems]
+POST {{host}}/api/admin/countries
+X-Api-Key: demo-admin-key
+Content-Type: application/json
+
+{ "code": "pol", "name": "Poland", "continent": "Europe", "borders": ["UA", "UA"] }
+
+### 201 as an admin
+POST {{host}}/api/admin/countries
+Authorization: Bearer demo-admin
+Content-Type: application/json
+
+{ "code": "PL", "name": "Poland", "continent": "Europe", "borders": ["UA", "DE"] }
+
+### Anonymous, though the admin group requires the admin policy: AllowAnonymous(), no lock
+GET {{host}}/api/admin/status
