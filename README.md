@@ -344,6 +344,20 @@ The returned list can feed a document picker, such as the one in
 app.MapReDocDocuments([.. documents.Select(document => new ReDocDocument(document.Name, document.Title))]);
 ```
 
+## Performance and AOT
+
+- **Cache the document.** Microsoft.AspNetCore.OpenApi builds the document again on every
+  request to `MapOpenApi()`'s endpoint, running every transformer. The transformers here read
+  each type's attributes and XML file once and keep them, but the document itself is the app's
+  to cache: `builder.Services.AddOutputCache()`, `app.UseOutputCache()`,
+  `app.MapOpenApi().CacheOutput()`, as the sample does.
+- **Rules are shared.** Each `IOpenApiRule` attribute is read once and the same instance
+  describes every schema it sits on, so `Describe` writes to the schema only.
+- **Trimming and Native AOT.** The package is marked AOT-compatible. It reflects only on types
+  ASP.NET Core hands it (parameter, property and validatable types), whose members the app's
+  own binding, serialization and generated validation keep. `AddStronglyTypedIds`' default rule
+  reads an ID's `Value` property; a `ValueTypeOf` of your own doesn't reflect at all.
+
 ## Limitations
 
 - **.NET 10 and 11 only.** .NET 9's transformers use Microsoft.OpenApi 1.x, an object model too

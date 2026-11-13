@@ -38,6 +38,9 @@ IReadOnlyList<OpenApiDocumentDefinition> documents = builder.Services.AddOpenApi
 `CopyDocumentationFilesFromPackages` in the app for types from NuGet packages. To keep IDs as
 named components for existing clients: `AddStronglyTypedIds(ids => ids.AsComponents = true)`.
 
+Trimming- and AOT-compatible. The document is built again on every request, so cache it:
+`app.MapOpenApi().CacheOutput()` (with `AddOutputCache()` and `UseOutputCache()`).
+
 ## Related packages
 
 - [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints):

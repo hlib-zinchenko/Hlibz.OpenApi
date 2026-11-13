@@ -41,6 +41,14 @@
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
   </PropertyGroup>
 
+  <!--
+    Trimming- and AOT-safe, like Microsoft.AspNetCore.OpenApi itself; the analyzers keep it so.
+    Where it reflects on types ASP.NET Core hands it, the suppressions say why that is safe.
+  -->
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Hlibz.OpenApi.AspNetCore.Tests" />
   </ItemGroup>

@@ -19,6 +19,9 @@ builder.Services.AddValidation();
 
 // Validation failures are written through it, as application/problem+json.
 builder.Services.AddProblemDetails();
+
+// Microsoft.AspNetCore.OpenApi builds the document again on every request; cache it instead.
+builder.Services.AddOutputCache();
 builder.Services
     .AddAuthentication(DemoAuthenticationHandler.SchemeName)
     .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, DemoAuthenticationHandler>(
@@ -65,8 +68,9 @@ WebApplication app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseOutputCache();
 
-app.MapOpenApi();
+app.MapOpenApi().CacheOutput();
 
 // Each group goes into the document for its audience; AddOpenApiDocuments filters on this name.
 app.MapEndpoints(typeof(Program).Assembly, options => options.ConfigureGroups(context =>
