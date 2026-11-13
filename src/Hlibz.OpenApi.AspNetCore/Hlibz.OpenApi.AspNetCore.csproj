@@ -14,14 +14,32 @@
   <!--
     Microsoft.AspNetCore.OpenApi's XML comment generator would compile this library's own doc
     comments (a cache and transformers nothing calls) into the package, so it is taken off the
-    compiler's analyzers. ExcludeAssets="analyzers" doesn't stop it. Apps get the generator from
-    their own direct reference, as the README says.
+    compiler's analyzers. ExcludeAssets="analyzers" doesn't stop it.
   -->
   <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
     <ItemGroup>
       <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
     </ItemGroup>
   </Target>
+
+  <!--
+    Apps get that generator through this package even without a direct reference to
+    Microsoft.AspNetCore.OpenApi, but not the property that lets its interceptors compile; this
+    target sets it for them (buildTransitive, so it reaches indirect consumers too).
+  -->
+  <ItemGroup>
+    <None Include="buildTransitive\Hlibz.OpenApi.AspNetCore.targets"
+          Pack="true"
+          PackagePath="buildTransitive" />
+  </ItemGroup>
+
+  <!--
+    XML documentation is found next to each assembly; in a single-file app assemblies have no
+    location. The analyzer keeps any other use of Assembly.Location from slipping in.
+  -->
+  <PropertyGroup>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Hlibz.OpenApi.AspNetCore.Tests" />

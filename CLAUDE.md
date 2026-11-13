@@ -20,7 +20,7 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
 - `AddXmlDocumentation()`: `Internal/XmlDocumentation` reads `<summary>`s (and a record's
   `<param>`s, for its positional properties) from the XML file next to each assembly at runtime,
   flattened to one line; ported from Lighthouse because Microsoft.AspNetCore.OpenApi's generator
-  skips `internal` types and other assemblies, writes crefs with their member's type and keeps
+  skips `internal` types (on .NET 10; .NET 11's doesn't) and other assemblies, writes crefs with their member's type and keeps
   line breaks. It *replaces* descriptions (the generator's), re-appending the rule text already
   there (`x-rules`, or the parked rules of a would-be `$ref`), so its order against
   `AddOpenApiRules()` doesn't matter; a property that will be a `$ref` gets its summary in
@@ -54,7 +54,7 @@ Core passes the parameter's `ParameterDescription` to *every* schema under it (a
 schema too), and describes a `TryParse`-bound parameter as `string`. Use it rather than reading
 `ParameterDescription` directly.
 
-- `samples/Atlas.Api`: every feature on Hlibz.MinimalApi.Endpoints (NuGet `1.0.0-preview.4`: each
+- `samples/Atlas.Api`: every feature on Hlibz.MinimalApi.Endpoints (NuGet `1.0.0-preview.5`: each
   endpoint's `Map(group)` makes one `MapGet`/`MapPost` call, a group's `Configure(group)` sets its
   tags and policy, and an endpoint class's `<summary>` becomes its operation description, so write
   those for API readers and keep notes in `<remarks>`) and Hlibz.Redoc.AspNetCore,
@@ -74,8 +74,13 @@ These matter for operation descriptions from handler summaries, and for what
 - It only intercepts `AddOpenApi` calls compiled in the project that has the generator: never
   calls inside this package, hence `AddOpenApiDocuments`' `addOpenApi` callback.
 - `AddOpenApi(name, configure)` and lambdas are intercepted; `AddOpenApi(configureVariable)` is not.
-- It's an analyzer in Microsoft.AspNetCore.OpenApi, so it only runs with a direct reference (the
-  test project has one).
+- It's an analyzer in Microsoft.AspNetCore.OpenApi, and NuGet passes it on to an app that gets
+  Microsoft.AspNetCore.OpenApi only through this package (despite `exclude="Analyzers"`), but not
+  the package's `build/` targets that allow its interceptors: without
+  `buildTransitive/Hlibz.OpenApi.AspNetCore.targets` such an app fails with CS9137. CI's
+  `.github/scripts/check-packed-package.sh` builds that app from the packed nupkg, and also runs
+  it published as a single file (`Assembly.Location` is empty there, so `XmlDocumentation`
+  falls back to `AppContext.BaseDirectory`; `EnableSingleFileAnalyzer` is on).
 - Its transformers are registered before the app's own, so rules append to the XML summary.
 
 ## Requires

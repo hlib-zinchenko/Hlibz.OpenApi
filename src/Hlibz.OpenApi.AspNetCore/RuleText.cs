@@ -34,7 +34,7 @@ public static class RuleText
             return;
         }
 
-        rules.Add(text);
+        rules.Add(JsonValue.Create(text));
         schema.Extensions[ExtensionName] = new JsonNodeExtension(rules);
         schema.Description = Append(schema.Description, text);
     }

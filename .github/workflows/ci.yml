@@ -51,3 +51,12 @@ jobs:
             grep -q "<icon>icon.png</icon>" package.nuspec
           done
           test "$(ls ./artifacts/*.nupkg | wc -l)" -eq 1
+          # The target that lets Microsoft.AspNetCore.OpenApi's interceptors compile in an app
+          # referencing only this package.
+          unzip -l ./artifacts/Hlibz.OpenApi.AspNetCore.[0-9]*.nupkg > contents.txt
+          grep -qE " buildTransitive/Hlibz\.OpenApi\.AspNetCore\.targets$" contents.txt
+
+      # An app referencing only the packed package compiles and describes a referenced project's
+      # type, from a plain build and as a single file.
+      - name: Packed package
+        run: .github/scripts/check-packed-package.sh ./artifacts

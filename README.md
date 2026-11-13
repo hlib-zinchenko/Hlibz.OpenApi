@@ -65,11 +65,11 @@ On a real API it misses a lot:
 
 | | Its generator | `AddXmlDocumentation()` |
 |---|---|---|
-| `internal` types (request bodies, `[AsParameters]` queries) | skipped | described |
+| `internal` types (request bodies, `[AsParameters]` queries) | skipped on .NET 10 (.NET 11 includes them) | described |
 | Types from other projects and NuGet packages | skipped | described, from their XML files (packages': see below) |
 | `<see cref="City.Name"/>` | "a `string` City.Name" | "City.Name" |
 | A summary over several lines | keeps the line breaks | one line |
-| Runs when | the app references Microsoft.AspNetCore.OpenApi directly and calls `AddOpenApi(name, ...)` itself | always |
+| Runs when | the app references Microsoft.AspNetCore.OpenApi (directly, or through this package) and calls `AddOpenApi(name, ...)` itself | always |
 
 - A record's `<param>` tag describes its positional property.
 - A property whose schema becomes a component (a DTO, an enum) gets its summary next to its

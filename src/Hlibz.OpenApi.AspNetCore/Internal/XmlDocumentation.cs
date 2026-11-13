@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
@@ -40,6 +41,20 @@ internal static class XmlDocumentation
             ? Summary(declaringType.Assembly, $"P:{name}.{property.Name}")
             : null;
 
+    /// <summary>
+    /// Gets where an assembly's XML documentation file is expected: next to the assembly, or, for
+    /// an assembly bundled into a single-file app (no location), in the app's directory, where
+    /// publishing leaves the XML files.
+    /// </summary>
+    /// <param name="location">The assembly's location; empty when it has none.</param>
+    /// <param name="assemblyName">The assembly's simple name.</param>
+    /// <param name="baseDirectory">The app's directory.</param>
+    /// <returns>The path of the XML file, which may not exist.</returns>
+    internal static string DocumentationPath(string location, string assemblyName, string baseDirectory) =>
+        string.IsNullOrEmpty(location)
+            ? Path.Combine(baseDirectory, assemblyName + ".xml")
+            : Path.ChangeExtension(location, ".xml");
+
     private static string? Summary(Assembly assembly, string memberId) =>
         Summaries.GetOrAdd(assembly, Load).GetValueOrDefault(memberId);
 
@@ -56,12 +71,12 @@ internal static class XmlDocumentation
     private static Dictionary<string, string> Load(Assembly assembly)
     {
         Dictionary<string, string> summaries = new(StringComparer.Ordinal);
-        if (string.IsNullOrEmpty(assembly.Location))
+        if (assembly.GetName().Name is not { } assemblyName)
         {
             return summaries;
         }
 
-        string path = Path.ChangeExtension(assembly.Location, ".xml");
+        string path = DocumentationPath(Location(assembly), assemblyName, AppContext.BaseDirectory);
         if (!File.Exists(path))
         {
             return summaries;
@@ -101,6 +116,13 @@ internal static class XmlDocumentation
 
         return summaries;
     }
+
+    // Assembly.Location is empty in a single-file app (IL3000); DocumentationPath handles that.
+    [UnconditionalSuppressMessage(
+        "SingleFile",
+        "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+        Justification = "An empty location falls back to the app's directory.")]
+    private static string Location(Assembly assembly) => assembly.Location;
 
     private static string Flatten(XElement element)
     {

@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using Hlibz.OpenApi.Internal;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OpenApi;
@@ -145,6 +147,24 @@ public sealed class XmlDocumentationTests
         Assert.Equal(
             "Gets or sets the guest's country.\n\n" + NotDefaultAttribute.Text,
             country.GetProperty("description").GetString());
+    }
+
+    [Fact]
+    public void DocumentationPath_WithLocation_IsNextToAssembly()
+    {
+        string location = Path.Combine("app", "lib", "Domain.dll");
+
+        string path = XmlDocumentation.DocumentationPath(location, "Domain", "base");
+
+        Assert.Equal(Path.Combine("app", "lib", "Domain.xml"), path);
+    }
+
+    [Fact]
+    public void DocumentationPath_InSingleFileApp_IsInAppDirectory()
+    {
+        string path = XmlDocumentation.DocumentationPath(string.Empty, "Domain", Path.Combine("app", "bin"));
+
+        Assert.Equal(Path.Combine("app", "bin", "Domain.xml"), path);
     }
 
     /// <summary>

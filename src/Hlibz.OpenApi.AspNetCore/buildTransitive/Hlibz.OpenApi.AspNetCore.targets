@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+      NuGet hands Microsoft.AspNetCore.OpenApi's XML comment generator to every project that gets
+      it through this package, despite pack's exclude="Analyzers", but not the package's
+      build/Microsoft.AspNetCore.OpenApi.targets, which allows the interceptors the generator
+      writes. Without this, an app referencing only Hlibz.OpenApi.AspNetCore fails to compile with
+      CS9137. A second entry, for an app that also references Microsoft.AspNetCore.OpenApi
+      directly, is harmless.
+  -->
+  <PropertyGroup>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+
+</Project>
