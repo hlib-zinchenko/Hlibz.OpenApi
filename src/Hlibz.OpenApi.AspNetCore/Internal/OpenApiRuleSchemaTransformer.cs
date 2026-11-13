@@ -15,12 +15,19 @@ namespace Hlibz.OpenApi.Internal;
 /// a rule describes a scratch schema instead and only its sentences are kept, next to the
 /// <c>$ref</c>, the way ASP.NET Core places the property's XML summary. The rules are also
 /// parked under <see cref="PendingRulesKey"/>, for a later transformer that inlines the schema
-/// after all (<see cref="StronglyTypedIdSchemaTransformer"/>) to apply in full.
+/// after all (<see cref="StronglyTypedIdSchemaTransformer"/>) to apply in full, and their
+/// sentences under <see cref="PendingRuleTextKey"/>.
 /// </remarks>
 internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
 {
     /// <summary>The metadata key the rules of a would-be <c>$ref</c> are parked under.</summary>
     internal const string PendingRulesKey = "x-hlibz-pending-rules";
+
+    /// <summary>
+    /// The metadata key the sentences of those rules are parked under, so the XML summary that
+    /// replaces the <c>$ref</c>'s description can keep them without describing the rules again.
+    /// </summary>
+    internal const string PendingRuleTextKey = "x-hlibz-pending-rule-text";
 
     private const string SchemaIdKey = "x-schema-id";
 
@@ -57,9 +64,10 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
         string? description = metadata.TryGetValue(RefDescriptionKey, out object? existing)
             ? existing as string
             : null;
-        foreach (string text in RuleText.Read(scratch))
+        IReadOnlyList<string> text = RuleText.Read(scratch);
+        foreach (string sentence in text)
         {
-            description = RuleText.Append(description, text);
+            description = RuleText.Append(description, sentence);
         }
 
         if (description is not null)
@@ -68,6 +76,7 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
         }
 
         metadata[PendingRulesKey] = rules;
+        metadata[PendingRuleTextKey] = text;
 
         return Task.CompletedTask;
     }
@@ -80,15 +89,11 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
     {
         if (context.JsonPropertyInfo is { } property)
         {
-            return property.AttributeProvider?.GetCustomAttributes(inherit: true)
-                       .OfType<IOpenApiRule>()
-                   ?? [];
+            return property.AttributeProvider is { } provider ? RuleAttributes.For(provider) : [];
         }
 
-        IEnumerable<IOpenApiRule> typeRules = Nullable.GetUnderlyingType(context.JsonTypeInfo.Type)
-            is { } underlying
-            ? TypeRules(underlying)
-            : TypeRules(context.JsonTypeInfo.Type);
+        IOpenApiRule[] typeRules = RuleAttributes.ForType(
+            Nullable.GetUnderlyingType(context.JsonTypeInfo.Type) ?? context.JsonTypeInfo.Type);
 
         // Only the parameter's own schema: an array parameter's item schema comes with the same
         // ParameterDescription, and must not get the array's rules.
@@ -102,9 +107,6 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
         return typeRules;
     }
 
-    private static IEnumerable<IOpenApiRule> TypeRules(Type type) =>
-        type.GetCustomAttributes(inherit: true).OfType<IOpenApiRule>();
-
     /// <summary>
     /// Reads an <c>[AsParameters]</c> property's attributes from the property itself: ASP.NET Core
     /// surfaces it as a <see cref="ParameterInfo"/> whose member is the property or, for a
@@ -112,14 +114,14 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
     /// </summary>
     private static IEnumerable<IOpenApiRule> FindParameterRules(ParameterInfo parameter)
     {
-        IEnumerable<object> attributes = parameter.GetCustomAttributes(inherit: true);
+        IEnumerable<IOpenApiRule> rules = RuleAttributes.ForParameter(parameter);
         if (parameter.Member is Type type
             && parameter.Name is { } name
             && type.GetProperty(name) is { } property)
         {
-            attributes = attributes.Concat(property.GetCustomAttributes(inherit: true));
+            rules = rules.Concat(RuleAttributes.For(property));
         }
 
-        return attributes.OfType<IOpenApiRule>().Distinct();
+        return rules.Distinct();
     }
 }

@@ -67,5 +67,5 @@ internal sealed class OpenApiRuleParameterOperationTransformer : IOpenApiOperati
             })
             .OfType<Type>()
             .Distinct()
-            .SelectMany(type => type.GetCustomAttributes(inherit: true).OfType<IOpenApiRule>());
+            .SelectMany(RuleAttributes.ForType);
 }

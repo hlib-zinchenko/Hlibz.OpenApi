@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace Hlibz.OpenApi.Internal;
@@ -55,6 +56,41 @@ internal static class XmlDocumentation
             ? Path.Combine(baseDirectory, assemblyName + ".xml")
             : Path.ChangeExtension(location, ".xml");
 
+    /// <summary>
+    /// The <c>&lt;member&gt;</c>s of types (<c>T:</c>) and properties (<c>P:</c>), the only ones
+    /// ever looked up. Methods, fields and events, usually most of the file, are skipped unread.
+    /// </summary>
+    /// <param name="path">The XML documentation file.</param>
+    /// <returns>The members, in file order.</returns>
+    internal static IEnumerable<XElement> TypeAndPropertyMembers(string path)
+    {
+        using XmlReader reader = XmlReader.Create(path, new XmlReaderSettings { IgnoreComments = true });
+        reader.MoveToContent();
+
+        // ReadFrom and Skip both leave the reader on the node after the member, which may be the
+        // next member already, so the loop looks at the current node before reading on.
+        while (!reader.EOF)
+        {
+            if (reader is not { NodeType: XmlNodeType.Element, LocalName: "member" })
+            {
+                reader.Read();
+                continue;
+            }
+
+            string? name = reader.GetAttribute("name");
+            if (name is not null
+                && (name.StartsWith("T:", StringComparison.Ordinal)
+                    || name.StartsWith("P:", StringComparison.Ordinal)))
+            {
+                yield return (XElement)XNode.ReadFrom(reader);
+            }
+            else
+            {
+                reader.Skip();
+            }
+        }
+    }
+
     private static string? Summary(Assembly assembly, string memberId) =>
         Summaries.GetOrAdd(assembly, Load).GetValueOrDefault(memberId);
 
@@ -83,13 +119,9 @@ internal static class XmlDocumentation
         }
 
         Dictionary<string, string> recordParameters = new(StringComparer.Ordinal);
-        foreach (XElement member in XDocument.Load(path).Descendants("member"))
+        foreach (XElement member in TypeAndPropertyMembers(path))
         {
-            if (member.Attribute("name")?.Value is not { } name)
-            {
-                continue;
-            }
-
+            string name = member.Attribute("name")!.Value;
             if (member.Element("summary") is { } summary && Flatten(summary) is { Length: > 0 } text)
             {
                 summaries[name] = text;

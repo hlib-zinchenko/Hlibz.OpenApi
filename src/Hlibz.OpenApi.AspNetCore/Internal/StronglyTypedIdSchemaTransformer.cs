@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -28,6 +30,9 @@ internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueT
 
     /// <summary>The metadata key ASP.NET Core puts a <c>$ref</c>'d property's summary under.</summary>
     private const string RefDescriptionKey = "x-ref-description";
+
+    /// <summary>The <see cref="SingleValueStruct"/> answer for each struct, looked up once.</summary>
+    private static readonly ConcurrentDictionary<Type, Type?> SingleValueStructs = new();
 
     public async Task TransformAsync(
         OpenApiSchema schema,
@@ -91,13 +96,20 @@ internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueT
     /// </summary>
     /// <param name="type">The type to check.</param>
     /// <returns>The type of <c>Value</c>, or <see langword="null"/>.</returns>
-    internal static Type? SingleValueStruct(Type type)
-    {
-        if (!type.IsValueType || type.IsPrimitive || type.IsEnum)
-        {
-            return null;
-        }
+    internal static Type? SingleValueStruct(Type type) =>
+        type.IsValueType && !type.IsPrimitive && !type.IsEnum
+            ? SingleValueStructs.GetOrAdd(type, static key => ReadSingleValue(key))
+            : null;
 
+    // An ID's Value is read by its JSON converter or TryParse, so trimming keeps it; one that
+    // was trimmed would only leave the ID's schema as ASP.NET Core wrote it. A custom
+    // StronglyTypedIdOptions.ValueTypeOf doesn't reflect at all.
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2070:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method",
+        Justification = "A trimmed Value property only means the schema isn't rewritten.")]
+    private static Type? ReadSingleValue(Type type)
+    {
         PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         return properties is [{ Name: "Value" } property] ? property.PropertyType : null;
     }
@@ -123,6 +135,7 @@ internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueT
             schema.Description = description as string;
         }
 
+        metadata.Remove(OpenApiRuleSchemaTransformer.PendingRuleTextKey);
         if (metadata.Remove(OpenApiRuleSchemaTransformer.PendingRulesKey, out object? pending)
             && pending is IOpenApiRule[] rules)
         {

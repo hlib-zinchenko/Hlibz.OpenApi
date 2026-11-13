@@ -75,20 +75,9 @@ internal sealed class XmlDocumentationSchemaTransformer : IOpenApiSchemaTransfor
         && !string.IsNullOrEmpty(id as string);
 
     /// <summary>The text of the rules <see cref="OpenApiRuleSchemaTransformer"/> parked on a would-be <c>$ref</c>.</summary>
-    private static IReadOnlyList<string> PendingRuleText(IDictionary<string, object> metadata)
-    {
-        if (!metadata.TryGetValue(OpenApiRuleSchemaTransformer.PendingRulesKey, out object? pending)
-            || pending is not IOpenApiRule[] rules)
-        {
-            return [];
-        }
-
-        OpenApiSchema scratch = new();
-        foreach (IOpenApiRule rule in rules)
-        {
-            rule.Describe(scratch);
-        }
-
-        return RuleText.Read(scratch);
-    }
+    private static IReadOnlyList<string> PendingRuleText(IDictionary<string, object> metadata) =>
+        metadata.TryGetValue(OpenApiRuleSchemaTransformer.PendingRuleTextKey, out object? pending)
+        && pending is IReadOnlyList<string> text
+            ? text
+            : [];
 }

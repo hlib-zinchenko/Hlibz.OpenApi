@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+
 namespace Hlibz.OpenApi.Internal;
 
 /// <summary>
@@ -9,6 +12,9 @@ namespace Hlibz.OpenApi.Internal;
 /// </summary>
 internal static class ParameterSchemas
 {
+    /// <summary>The <see cref="ElementType"/> of each non-array type, looked up once.</summary>
+    private static readonly ConcurrentDictionary<Type, Type?> ElementTypes = new();
+
     /// <summary>
     /// Gets the parameter type the schema stands for, when the schema is the parameter's own
     /// (not a nested one), or <see langword="null"/>.
@@ -41,13 +47,26 @@ internal static class ParameterSchemas
             return null;
         }
 
-        if (type.IsArray)
+        return type.IsArray
+            ? type.GetElementType()
+            : ElementTypes.GetOrAdd(type, static key => ReadElementType(key));
+    }
+
+    // An IEnumerable<T> a collection type implements is how its binder and serializer
+    // enumerate it, so trimming keeps it; a trimmed one couldn't be enumerated either.
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2070:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method",
+        Justification = "A collection's IEnumerable<T> is kept by whatever enumerates it.")]
+    private static Type? ReadElementType(Type type)
+    {
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
         {
-            return type.GetElementType();
+            return type.GetGenericArguments()[0];
         }
 
         return Array.Find(
-                type.GetInterfaces().Append(type).ToArray(),
+                type.GetInterfaces(),
                 candidate => candidate.IsGenericType
                              && candidate.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             ?.GetGenericArguments()[0];

@@ -10,6 +10,8 @@ namespace Hlibz.OpenApi;
 /// one and it writes its own keywords and text. Prefer a real JSON Schema keyword where one exists
 /// (<c>pattern</c>, <c>not</c>, <c>uniqueItems</c>, <c>exclusiveMinimum</c>), so client generators
 /// can enforce it, and add a sentence with <see cref="RuleText.Add"/> for people reading the docs.
+/// Each attribute is read once and the same instance describes every schema it applies to, in
+/// every document, so <see cref="Describe"/> writes only to the schema, never to the rule itself.
 /// </remarks>
 /// <example>
 /// <code>

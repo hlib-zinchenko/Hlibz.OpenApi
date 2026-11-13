@@ -167,6 +167,32 @@ public sealed class XmlDocumentationTests
         Assert.Equal(Path.Combine("app", "bin", "Domain.xml"), path);
     }
 
+    [Fact]
+    public void TypeAndPropertyMembers_AdjacentMembersAmongMethods_ReadsOnlyTypesAndProperties()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.xml");
+        const string Xml = "<doc><members>"
+                           + "<member name=\"T:A\"><summary>a</summary></member>"
+                           + "<member name=\"M:A.Run\"><summary>run</summary></member>"
+                           + "<member name=\"P:A.B\"><summary>b</summary></member>"
+                           + "<member name=\"P:A.C\"><summary>c</summary></member>"
+                           + "<member name=\"F:A.D\"/>"
+                           + "<member name=\"T:E\"/>"
+                           + "</members></doc>";
+        File.WriteAllText(path, Xml);
+        try
+        {
+            string?[] names =
+                [.. XmlDocumentation.TypeAndPropertyMembers(path).Select(member => member.Attribute("name")?.Value)];
+
+            Assert.Equal(["T:A", "P:A.B", "P:A.C", "T:E"], names);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     /// <summary>
     /// A nullable property's <c>$ref</c> is one branch of a <c>oneOf</c> with <c>null</c>, and
     /// ASP.NET Core puts the property's description on that branch.
