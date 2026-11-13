@@ -16,6 +16,7 @@ dotnet add package Hlibz.OpenApi.AspNetCore
 using Hlibz.OpenApi;
 
 builder.Services.AddOpenApi("v1", options => options
+    .AddXmlDocumentation()    // <summary>s as descriptions, internal types and packages included
     .AddOpenApiRules()        // custom validation attributes describe themselves (IOpenApiRule)
     .AddStronglyTypedIds()    // CountryId(Guid Value) → { "type": "string", "format": "uuid" }
     .AddValidationProblems()  // the 400 AddValidation() answers with, where it can
@@ -32,9 +33,10 @@ IReadOnlyList<OpenApiDocumentDefinition> documents = builder.Services.AddOpenApi
     options => options.AddBearerSecurity());
 ```
 
-For XML `<summary>` comments, reference `Microsoft.AspNetCore.OpenApi` directly in the app and
-turn on `GenerateDocumentationFile`: the comments come from a source generator in that package,
-which doesn't flow through this one.
+`AddXmlDocumentation()` reads the XML file next to each assembly at runtime, so turn on
+`GenerateDocumentationFile` in every project whose types you want described, and
+`CopyDocumentationFilesFromPackages` in the app for types from NuGet packages. To keep IDs as
+named components for existing clients: `AddStronglyTypedIds(ids => ids.AsComponents = true)`.
 
 ## Related packages
 

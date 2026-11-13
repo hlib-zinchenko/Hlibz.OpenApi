@@ -13,6 +13,7 @@ OpenAPI document says.
 
 | Feature | Call | What it does |
 |---|---|---|
+| [XML documentation](#xml-documentation) | `AddXmlDocumentation()` | `<summary>` comments as descriptions, internal types and packages included. |
 | [Self-describing rules](#self-describing-validation-rules) | `AddOpenApiRules()` | Custom validation attributes write their own schema keywords and text. |
 | [Strongly-typed IDs](#strongly-typed-ids) | `AddStronglyTypedIds()` | `CountryId(Guid Value)` is published as `string`/`uuid`, not an object. |
 | [Validation problems](#validation-problems) | `AddValidationProblems()` | The `400` that `AddValidation()` answers with, on exactly the operations it can come from. |
@@ -30,6 +31,7 @@ dotnet add package Hlibz.OpenApi.AspNetCore
 using Hlibz.OpenApi;
 
 builder.Services.AddOpenApi("v1", options => options
+    .AddXmlDocumentation()
     .AddOpenApiRules()
     .AddStronglyTypedIds()
     .AddValidationProblems()
@@ -39,20 +41,54 @@ builder.Services.AddOpenApi("v1", options => options
 app.MapOpenApi();
 ```
 
-## XML comments
+## XML documentation
 
-Microsoft.AspNetCore.OpenApi already turns XML `<summary>` comments into descriptions, at compile
-time. It needs three things this package can't do for you:
+`AddXmlDocumentation()` publishes XML `<summary>` comments as the descriptions of schemas, their
+properties and `[AsParameters]` parameters. It reads them at runtime from the XML file next to
+each assembly, so turn the file on in every project whose types you want described:
 
-- `<GenerateDocumentationFile>true</GenerateDocumentationFile>` in the app, and in any project
-  whose types you want described.
-- A **direct** `PackageReference` to `Microsoft.AspNetCore.OpenApi` in the app. The comments come
-  from a source generator in that package. Analyzers don't flow through a transitive reference, so
-  if you only get the package through this one, you get no comments.
-- The `AddOpenApi(...)` call written in the app, as `AddOpenApi(name, options => ...)` or
-  `AddOpenApi(name, configure)`. The generator rewrites those calls. It doesn't rewrite
-  `AddOpenApi(configure)` with a delegate *variable*, and it never rewrites a call made from
-  inside a library.
+```xml
+<GenerateDocumentationFile>true</GenerateDocumentationFile>
+```
+
+```csharp
+/// <summary>Suggests a city for a <see cref="CountryDto"/>.</summary>
+internal sealed class SuggestCityRequest
+{
+    /// <summary>Gets or sets the city's name, as it's written locally.</summary>
+    public required string Name { get; init; }
+}
+```
+
+Microsoft.AspNetCore.OpenApi has an XML comment generator of its own, which runs at compile time.
+On a real API it misses a lot:
+
+| | Its generator | `AddXmlDocumentation()` |
+|---|---|---|
+| `internal` types (request bodies, `[AsParameters]` queries) | skipped | described |
+| Types from other projects and NuGet packages | skipped | described, from their XML files (packages': see below) |
+| `<see cref="City.Name"/>` | "a `string` City.Name" | "City.Name" |
+| A summary over several lines | keeps the line breaks | one line |
+| Runs when | the app references Microsoft.AspNetCore.OpenApi directly and calls `AddOpenApi(name, ...)` itself | always |
+
+- A record's `<param>` tag describes its positional property.
+- A property whose schema becomes a component (a DTO, an enum) gets its summary next to its
+  `$ref`, so it never lands on the component every other use shares.
+- `<remarks>` are never read: keep notes for developers there.
+- It replaces the generator's descriptions wherever it has a summary, so both can be on. The
+  generator still writes operation descriptions from handler methods' summaries;
+  `AddXmlDocumentation()` leaves operations alone. (Endpoint classes from
+  [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints) describe
+  their operations themselves.)
+- The rule text `AddOpenApiRules()` writes stays after the summary, whichever is registered first.
+
+To describe types from NuGet packages too (an error body from a shared package, say), have the
+build copy each package's XML file next to its DLL, in the app's project. `dotnet publish`
+then ships them as well:
+
+```xml
+<CopyDocumentationFilesFromPackages>true</CopyDocumentationFilesFromPackages>
+```
 
 ## Self-describing validation rules
 
@@ -136,7 +172,8 @@ Without this, an ID with a JSON converter gets an empty schema, and a route para
 ```
 
 - The ID takes the schema of the type it wraps, so `int`, `long` and `string` IDs work too.
-- IDs are inlined, not made into components, and `CountryId?` stays nullable.
+- IDs are inlined, not made into components, and `CountryId?` stays nullable. To keep the
+  components, see below.
 - Route and query parameters (`MapGet("countries/{id}", (CountryId id) => ...)`) are covered,
   and so are arrays of them in the query string (`?countryIds=...&countryIds=...`).
 - The default rule matches a struct whose only public property is `Value` and which
@@ -146,11 +183,28 @@ Without this, an ID with a JSON converter gets an empty schema, and a route para
 To use your own rule, return the wrapped type, or `null` for anything else:
 
 ```csharp
-options.AddStronglyTypedIds(type => type.IsAssignableTo(typeof(IEntityId)) ? typeof(Guid) : null);
+options.AddStronglyTypedIds(ids =>
+    ids.ValueTypeOf = type => type.IsAssignableTo(typeof(IEntityId)) ? typeof(Guid) : null);
 ```
 
 A rule attribute on an ID property works as on any other property. For example, a `[NotDefault]`
 that writes `not: { const: "00000000-..." }` ends up on the inlined ID.
+
+If generated clients already use the IDs' names (a `CountryId` type in TypeScript, say), keep
+each ID a component of its own, now with the wrapped value's schema:
+
+```csharp
+options.AddStronglyTypedIds(ids => ids.AsComponents = true);
+```
+
+```json
+"countryId":         { "$ref": "#/components/schemas/CountryId" },
+"previousCountryId": { "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/CountryId" }] },
+"CountryId":         { "type": "string", "format": "uuid" }
+```
+
+Parameters stay inline. A rule on an ID property is then described next to its `$ref` in words
+only, as on any other component property.
 
 ## Validation problems
 
@@ -236,8 +290,8 @@ options
 
 ## Description cleanup
 
-StyleCop wants property summaries to start with "Gets or sets ...", and the XML comment generator
-copies them as written. `AddDescriptionCleanup()` removes that wording from schema, property and
+StyleCop wants property summaries to start with "Gets or sets ...", and XML summaries are
+copied as written. `AddDescriptionCleanup()` removes that wording from schema, property and
 parameter descriptions:
 
 | Summary | Description |
@@ -276,8 +330,9 @@ app.MapGroup("admin/cities").WithGroupName("LocationsAdmin")...;
   defaults to the document name. Endpoints without a group name are in none of the documents.
   Controllers set the group with `[ApiExplorerSettings(GroupName = "...")]`.
 - `Title` sets `info.title`.
-- The `addOpenApi` callback is your own `AddOpenApi` call, written in your app so the XML comment
-  generator can see it (see [XML comments](#xml-comments)). Copy it as shown.
+- The `addOpenApi` callback is your own `AddOpenApi` call, written in your app so
+  Microsoft.AspNetCore.OpenApi's XML comment generator can see it (it never rewrites a call made
+  inside a library). Copy it as shown.
 - The configure callback runs after the group filter, so it can override `ShouldInclude`. It can
   tell the documents apart by `options.DocumentName`.
 - Two documents with the same name throw an exception at startup.
@@ -293,9 +348,8 @@ app.MapReDocDocuments([.. documents.Select(document => new ReDocDocument(documen
 
 - **.NET 10 and 11 only.** .NET 9's transformers use Microsoft.OpenApi 1.x, an object model too
   different to share code with the 2.x and 3.x that .NET 10 and 11 use.
-- **XML comments need a direct reference.** They come from a source generator in
-  Microsoft.AspNetCore.OpenApi, which only runs in a project that references that package
-  itself (see [XML comments](#xml-comments)).
+- **XML documentation needs the XML files on disk.** `AddXmlDocumentation()` reads each one next
+  to its assembly; a single-file publish has none to read, so its types go undescribed.
 - **Swashbuckle.** Everything here plugs into Microsoft.AspNetCore.OpenApi's transformers.
   Swashbuckle uses filters instead, so a port would be a separate `Hlibz.OpenApi.Swashbuckle`
   package.

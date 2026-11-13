@@ -17,9 +17,21 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
   also copied to the parameter's description (`Internal/OpenApiRuleParameterOperationTransformer`).
   A property whose schema will become a `$ref` gets its rule text in `x-ref-description` only, and
   its rules parked under `PendingRulesKey`.
-- `AddStronglyTypedIds(valueTypeOf?)`: rewrites ID schemas to the wrapped type's schema and
+- `AddXmlDocumentation()`: `Internal/XmlDocumentation` reads `<summary>`s (and a record's
+  `<param>`s, for its positional properties) from the XML file next to each assembly at runtime,
+  flattened to one line; ported from Lighthouse because Microsoft.AspNetCore.OpenApi's generator
+  skips `internal` types and other assemblies, writes crefs with their member's type and keeps
+  line breaks. It *replaces* descriptions (the generator's), re-appending the rule text already
+  there (`x-rules`, or the parked rules of a would-be `$ref`), so its order against
+  `AddOpenApiRules()` doesn't matter; a property that will be a `$ref` gets its summary in
+  `x-ref-description`. Operations are left alone, and so is the type summary on a path, query or
+  header parameter's schema. Package XML files reach `bin` and publish output only with
+  `CopyDocumentationFilesFromPackages` (checked on the 11.0.100 SDK).
+- `AddStronglyTypedIds(configure?)`: rewrites ID schemas to the wrapped type's schema and
   inlines them (removes `x-schema-id`, `x-is-nullable-property`), applying any `x-ref-description`
-  and parked rules, so the result doesn't depend on registration order.
+  and parked rules, so the result doesn't depend on registration order. With
+  `AsComponents = true` a would-be `$ref` keeps its metadata and stays a component (never
+  nullable itself: ASP.NET Core wraps nullable uses in `oneOf` with `null`).
 - `AddBearerSecurity()` / `AddSecurity(name, scheme)`: scheme on the document, requirement on
   operations where `RequiresAuthorization` (auth metadata or fallback policy, minus
   `IAllowAnonymous`). Same check as Hlibz.MinimalApi.Endpoints' internal one, copied on purpose:
@@ -55,6 +67,9 @@ internal to Microsoft.AspNetCore.OpenApi and verified by the tests on both targe
 recheck them when adding a target framework.
 
 ## XML comment generator facts (tested)
+
+These matter for operation descriptions from handler summaries, and for what
+`AddXmlDocumentation()` replaces.
 
 - It only intercepts `AddOpenApi` calls compiled in the project that has the generator: never
   calls inside this package, hence `AddOpenApiDocuments`' `addOpenApi` callback.

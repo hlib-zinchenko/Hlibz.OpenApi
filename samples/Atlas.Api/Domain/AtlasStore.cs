@@ -4,7 +4,7 @@ using System.Globalization;
 namespace Atlas.Api.Domain;
 
 /// <summary>The sample's data, in memory, seeded with a few countries and cities.</summary>
-public sealed class AtlasStore
+internal sealed class AtlasStore
 {
     private readonly ConcurrentDictionary<CountryId, CountryDto> _countries = new();
 

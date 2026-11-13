@@ -78,12 +78,64 @@ public sealed class StronglyTypedIdTests
     public async Task CustomRule_OnlyRewritesTypesItMatches()
     {
         HttpClient client = await TestApp.StartAsync(
-            options => options.AddStronglyTypedIds(type => type == typeof(PlainWrapper) ? typeof(Guid) : null),
+            options => options.AddStronglyTypedIds(ids => ids.ValueTypeOf = type => type == typeof(PlainWrapper) ? typeof(Guid) : null),
             MapCity);
         JsonElement document = await client.GetDocumentAsync();
 
         Assert.Equal("uuid", CityProperty(document, "plain").GetProperty("format").GetString());
         Assert.False(CityProperty(document, "countryId").TryGetProperty("format", out _));
+    }
+
+    [Fact]
+    public async Task AsComponents_GuidId_IsUuidComponent()
+    {
+        JsonElement document = await StartAsync(ids => ids.AsComponents = true);
+
+        Assert.Equal("#/components/schemas/CountryId", CityProperty(document, "countryId").GetProperty("$ref").GetString());
+        JsonElement component = document.Schema("CountryId");
+        Assert.Equal("string", component.GetProperty("type").GetString());
+        Assert.Equal("uuid", component.GetProperty("format").GetString());
+        Assert.False(component.TryGetProperty("properties", out _));
+    }
+
+    [Fact]
+    public async Task AsComponents_NullableId_IsOneOfNullAndReference()
+    {
+        JsonElement document = await StartAsync(ids => ids.AsComponents = true);
+
+        string?[] branches =
+        [
+            .. CityProperty(document, "previousCountryId").GetProperty("oneOf").EnumerateArray()
+                .Select(branch => branch.TryGetProperty("$ref", out JsonElement reference)
+                    ? reference.GetString()
+                    : branch.GetProperty("type").GetString()),
+        ];
+        Assert.Equal(["null", "#/components/schemas/CountryId"], branches);
+        Assert.Equal("string", document.Schema("CountryId").GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task AsComponents_RouteParameter_IsUuidString()
+    {
+        JsonElement document = await StartAsync(ids => ids.AsComponents = true);
+
+        JsonElement id = document.Operation("/cities/{id}").Parameter("id").GetProperty("schema");
+        Assert.Equal("string", id.GetProperty("type").GetString());
+        Assert.Equal("uuid", id.GetProperty("format").GetString());
+    }
+
+    [Fact]
+    public async Task AsComponents_PropertyRules_AreDescribedNextToReference()
+    {
+        HttpClient client = await TestApp.StartAsync(
+            options => options.AddOpenApiRules().AddStronglyTypedIds(ids => ids.AsComponents = true),
+            app => app.MapGet("paint", () => TypedResults.Ok(new Paint())));
+        JsonElement document = await client.GetDocumentAsync();
+
+        JsonElement madeIn = document.Schema("Paint").GetProperty("properties").GetProperty("madeIn");
+        Assert.Equal("#/components/schemas/CountryId", madeIn.GetProperty("$ref").GetString());
+        Assert.EndsWith(NotDefaultAttribute.Text, madeIn.GetProperty("description").GetString(), StringComparison.Ordinal);
+        Assert.False(document.Schema("CountryId").TryGetProperty("not", out _));
     }
 
     [Fact]
@@ -97,9 +149,9 @@ public sealed class StronglyTypedIdTests
         Assert.Null(Internal.StronglyTypedIdSchemaTransformer.SingleValueStruct(typeof(KeyValuePair<int, int>)));
     }
 
-    private static async Task<JsonElement> StartAsync()
+    private static async Task<JsonElement> StartAsync(Action<StronglyTypedIdOptions>? configure = null)
     {
-        HttpClient client = await TestApp.StartAsync(options => options.AddStronglyTypedIds(), MapCity);
+        HttpClient client = await TestApp.StartAsync(options => options.AddStronglyTypedIds(configure), MapCity);
         return await client.GetDocumentAsync();
     }
 

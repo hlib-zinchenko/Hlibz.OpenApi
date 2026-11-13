@@ -17,8 +17,8 @@ The package is worth building, but smaller than proposed and around a different 
 | Strongly-typed ID schema transformer | **Ship**, matching a predicate or "struct with a single `Value`", not `IEntityId`. |
 | Bearer security scheme and requirement | **Ship, after fixing it**: the requirement ignores `AllowAnonymous`. Make the scheme configurable. |
 | "Gets or sets" / "Gets" prefix stripping | **Ship** as a tiny description-cleanup transformer; the rest of the XML code goes. |
-| XML documentation reader and transformers | **Drop**: the built-in generator covers it. |
-| `PagedDataSchemaTransformer` | **Drop**: use C#'s `required` modifier on `PagedData`/`PagingMetadata` instead. |
+| XML documentation reader and transformers | ~~Drop: the built-in generator covers it.~~ **Ship** as `AddXmlDocumentation()`: it doesn't (see section 2). |
+| `PagedDataSchemaTransformer` | **Drop**: `PagedData`/`PagingMetadata` properties are `required` from Hlibz.Paging 1.0.0-preview.2. |
 | Module documents (`ApiModule`, `AddModuleOpenApiDocuments`) | **Split:** registering several documents goes in the OpenAPI package. ReDoc already takes the list. Endpoints only sets `WithGroupName`. Choosing the modules stays in Lighthouse. |
 | `SortableParameterOperationTransformer` | **Keep in Lighthouse** (tied to `BaseGetQuery`). |
 | Document the `400` of endpoints `AddValidation()` validates | **Done: `AddValidationProblems()`.** .NET doesn't document it. |
@@ -140,6 +140,15 @@ Design notes:
 
 ## 2. Built-in XML comments make most of Lighthouse's XML code redundant
 
+> **Corrected (2026-11-13), after Lighthouse adopted 1.0.0-preview.1.** The verdict below was
+> wrong. On Lighthouse the generator lost 193 schema and 67 parameter descriptions, because it
+> skips `internal` types (every request body and `[AsParameters]` query). It never reads other
+> assemblies' XML files (`ErrorResponse`, `ErrorCode` from Hlibz.Results), it writes a
+> `<see cref>` with its member's type ("Who `UserId?` AdminContactMessageListItemDto.CreatedBy
+> is") and loses the space after a `<see langword>`, and it keeps line breaks (83 descriptions).
+> The runtime reader now ships as `AddXmlDocumentation()`. The original analysis follows: it only
+> looked at public types in one project.
+
 With `GenerateDocumentationFile` on, `Microsoft.AspNetCore.OpenApi`'s own source-generated
 XML comment support already emitted:
 
@@ -157,6 +166,11 @@ Endpoint summaries as operation descriptions are now done by Hlibz.MinimalApi.En
 at compile time (`DescribeEndpointsFromSummaries`).
 
 ## 3. `PagedDataSchemaTransformer` can be replaced by `required`
+
+> **Done (2026-11-13)** in Hlibz.Paging 1.0.0-preview.2: every `PagedData`/`PagingMetadata`
+> property is `required` + `init`, with a parameterless constructor for serializers and the
+> existing ones marked `[SetsRequiredMembers]`; checked against Microsoft.AspNetCore.OpenApi 10
+> and 11.
 
 The transformer only marks every property of `PagedData<T>`/`PagingMetadata` as required.
 Tested: C#'s `required` modifier already puts a property in the schema's `required` list

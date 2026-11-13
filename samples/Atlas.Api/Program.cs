@@ -29,13 +29,14 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.Admin, policy => policy.RequireRole("admin"));
 
 // Two documents, one per endpoint group name, configured once. The callback is the app's own
-// AddOpenApi call, so Microsoft.AspNetCore.OpenApi's generator sees it and adds the XML comments.
+// AddOpenApi call, as Microsoft.AspNetCore.OpenApi's XML comment generator needs.
 IReadOnlyList<OpenApiDocumentDefinition> documents = builder.Services.AddOpenApiDocuments(
     Documents.All,
     (services, name, configure) => services.AddOpenApi(name, configure),
     options =>
     {
         options
+            .AddXmlDocumentation()
             .AddStronglyTypedIds()
             .AddOpenApiRules()
             .AddDescriptionCleanup()

@@ -72,24 +72,6 @@ public sealed class SearchCitiesQuery : IValidatableObject
     }
 }
 
-/// <summary>Suggests a city the atlas is missing, for an admin to review.</summary>
-[ValidatableType]
-public sealed class SuggestCityRequest
-{
-    /// <summary>Gets or sets the country the city is in.</summary>
-    [NotDefault]
-    public CountryId CountryId { get; set; }
-
-    /// <summary>Gets or sets the city's English name.</summary>
-    [Required]
-    [MaxLength(100)]
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>Gets or sets where the suggestion comes from, such as a link.</summary>
-    [MaxLength(500)]
-    public string? Source { get; set; }
-}
-
 /// <summary>Adds a country to the atlas.</summary>
 [ValidatableType]
 public sealed class CreateCountryRequest
@@ -139,3 +121,21 @@ public sealed class CreateCityRequest
 /// <param name="Cities">Gets the number of cities in the atlas.</param>
 /// <param name="PendingSuggestions">Gets the number of city suggestions waiting for review.</param>
 public sealed record AdminStatusDto(int Countries, int Cities, int PendingSuggestions);
+
+/// <summary>Suggests a city the atlas is missing, for an admin to review.</summary>
+[ValidatableType]
+internal sealed class SuggestCityRequest
+{
+    /// <summary>Gets or sets the country the city is in.</summary>
+    [NotDefault]
+    public CountryId CountryId { get; set; }
+
+    /// <summary>Gets or sets the city's English name.</summary>
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets where the suggestion comes from, such as a link.</summary>
+    [MaxLength(500)]
+    public string? Source { get; set; }
+}

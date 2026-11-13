@@ -7,13 +7,17 @@ namespace Hlibz.OpenApi.Internal;
 /// <summary>
 /// Publishes each strongly-typed ID as the schema of the value it wraps (a <c>CountryId</c> over a
 /// <see cref="Guid"/> becomes <c>{ "type": "string", "format": "uuid" }</c>), inline rather than
-/// as a component of its own.
+/// as a component of its own unless <paramref name="asComponents"/>.
 /// </summary>
 /// <param name="valueTypeOf">
 /// Gets the wrapped type of an ID type, or <see langword="null"/> for any other type;
 /// <see langword="null"/> for the default rule, <see cref="SingleValueStruct"/>.
 /// </param>
-internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueTypeOf)
+/// <param name="asComponents">
+/// Whether an ID that would be a component stays one, so properties keep their <c>$ref</c> and
+/// ASP.NET Core expresses a nullable one as <c>oneOf</c> with <c>null</c>.
+/// </param>
+internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueTypeOf, bool asComponents)
     : IOpenApiSchemaTransformer
 {
     /// <summary>The metadata key ASP.NET Core turns into a component schema and a <c>$ref</c>.</summary>
@@ -57,8 +61,12 @@ internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueT
             .GetOrCreateSchemaAsync(valueType, parameterDescription: null, cancellationToken)
             .ConfigureAwait(false);
 
-        bool nullable = nullableOf is not null
-                        || (schema.Type is { } current && current.HasFlag(JsonSchemaType.Null));
+        // A component is shared by nullable and non-nullable uses alike; ASP.NET Core wraps the
+        // nullable ones' $ref in a oneOf with null.
+        bool component = asComponents && IsReference(schema);
+        bool nullable = !component
+                        && (nullableOf is not null
+                            || (schema.Type is { } current && current.HasFlag(JsonSchemaType.Null)));
         schema.Type = value.Type is { } valueSchemaType && nullable
             ? valueSchemaType | JsonSchemaType.Null
             : value.Type;
@@ -71,7 +79,7 @@ internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueT
         schema.AnyOf?.Clear();
         schema.OneOf?.Clear();
         schema.AllOf?.Clear();
-        if (schema.Metadata is { } metadata)
+        if (!component && schema.Metadata is { } metadata)
         {
             Inline(schema, metadata);
         }
@@ -93,6 +101,10 @@ internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueT
         PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         return properties is [{ Name: "Value" } property] ? property.PropertyType : null;
     }
+
+    private static bool IsReference(OpenApiSchema schema) =>
+        schema.Metadata?.TryGetValue(SchemaIdKey, out object? id) == true
+        && !string.IsNullOrEmpty(id as string);
 
     /// <summary>
     /// Makes the schema an inline one rather than a component, keeping what earlier transformers
