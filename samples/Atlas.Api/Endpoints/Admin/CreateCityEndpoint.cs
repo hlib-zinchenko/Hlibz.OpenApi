@@ -10,7 +10,7 @@ namespace Atlas.Api.Endpoints.Admin;
 /// <summary>
 /// Adds a city to an existing country; an unknown country is a <c>404</c>.
 /// </summary>
-internal sealed class CreateCityEndpoint : IEndpoint<AdminAtlasEndpointGroup, CityDto>
+internal sealed class CreateCityEndpoint : IEndpoint<AdminAtlasEndpointGroup>
 {
     public RouteHandlerBuilder Map(IEndpointRouteBuilder group) =>
         group.MapPost("cities", Handle)

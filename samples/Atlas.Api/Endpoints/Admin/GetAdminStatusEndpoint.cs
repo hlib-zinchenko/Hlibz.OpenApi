@@ -15,7 +15,7 @@ namespace Atlas.Api.Endpoints.Admin;
 /// Its group requires the admin policy, but <c>AllowAnonymous()</c> opens it again, so the docs
 /// show no lock on it.
 /// </remarks>
-internal sealed class GetAdminStatusEndpoint : IEndpoint<AdminAtlasEndpointGroup, AdminStatusDto>
+internal sealed class GetAdminStatusEndpoint : IEndpoint<AdminAtlasEndpointGroup>
 {
     public RouteHandlerBuilder Map(IEndpointRouteBuilder group) =>
         group.MapGet("status", Handle)

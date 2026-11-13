@@ -42,7 +42,7 @@ Core passes the parameter's `ParameterDescription` to *every* schema under it (a
 schema too), and describes a `TryParse`-bound parameter as `string`. Use it rather than reading
 `ParameterDescription` directly.
 
-- `samples/Atlas.Api`: every feature on Hlibz.MinimalApi.Endpoints (NuGet `1.0.0-preview.2`: each
+- `samples/Atlas.Api`: every feature on Hlibz.MinimalApi.Endpoints (NuGet `1.0.0-preview.4`: each
   endpoint's `Map(group)` makes one `MapGet`/`MapPost` call, a group's `Configure(group)` sets its
   tags and policy, and an endpoint class's `<summary>` becomes its operation description, so write
   those for API readers and keep notes in `<remarks>`) and Hlibz.Redoc.AspNetCore,
@@ -65,7 +65,9 @@ recheck them when adding a target framework.
 
 ## Requires
 
-* .NET 11 SDK, plus the .NET 10 runtime to run both test targets.
+* The .NET SDK `global.json` pins (11.0.100, patches roll forward; Dependabot bumps it), plus
+  the .NET 10 runtime to run both test targets. Pinned because warnings are errors and
+  `AnalysisMode=All`: a new SDK feature band brings new analyzer rules.
 
 ## Commands
 
@@ -92,6 +94,17 @@ Targets net10.0 and net11.0 only: Microsoft.AspNetCore.OpenApi 10 uses Microsoft
 
 Versions are central (`Directory.Packages.props`); Microsoft.AspNetCore.OpenApi is a minimum per
 target framework and Dependabot ignores it. Shared NuGet metadata and `Version` live in
-`Directory.Build.props`; release by pushing a `vX.Y.Z` tag. The package has its own
+`Directory.Build.props`; release by pushing a `vX.Y.Z` tag (see Releasing). The package has its own
 `src/<Package>/README.md` (packed, shown on nuget.org, absolute links only); the root `README.md`
 is the full documentation; keep them in step when an API changes.
+
+## Releasing
+
+1. Set `Version` in `Directory.Build.props`, commit, then push the tag `vX.Y.Z`.
+2. The user approves the `release` environment run.
+3. Once the run succeeds and
+   `https://api.nuget.org/v3-flatcontainer/<lowercase id>/index.json` lists the version, Claude
+   creates the GitHub release that `PackageReleaseNotes` links to:
+   `gh release create vX.Y.Z --verify-tag --title X.Y.Z [--prerelease when the version has a suffix] --notes-file <notes>`.
+   Claude writes the notes from `git log <previous tag>..vX.Y.Z`: breaking changes first, then
+   features and fixes, then one nuget.org link per package. Nothing is attached.

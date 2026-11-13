@@ -2,8 +2,8 @@
 
   <PropertyGroup Label="NuGet metadata">
     <PackageId>Hlibz.OpenApi.AspNetCore</PackageId>
-    <Description>Transformers for Microsoft.AspNetCore.OpenApi: custom validation attributes that describe themselves in the schema (IOpenApiRule), strongly-typed IDs published as their inner value, a bearer (or any) security scheme marked on exactly the endpoints that require authorization, StyleCop's "Gets or sets" wording stripped from descriptions, and several OpenAPI documents registered in one call, one per endpoint group.</Description>
-    <PackageTags>openapi;aspnetcore;minimal-api;transformers;validation;strongly-typed-ids;security;redoc</PackageTags>
+    <Description>Transformers for Microsoft.AspNetCore.OpenApi: custom validation attributes that describe themselves in the schema (IOpenApiRule), strongly-typed IDs published as their inner value, the 400 that AddValidation() answers with on exactly the operations it can come from (AddValidationProblems), a bearer (or any) security scheme marked on exactly the endpoints that require authorization, StyleCop's "Gets or sets" wording stripped from descriptions, and several OpenAPI documents registered in one call, one per endpoint group.</Description>
+    <PackageTags>openapi;aspnetcore;minimal-api;transformers;validation;strongly-typed-ids;security</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -16,7 +16,7 @@ namespace Atlas.Api.Endpoints.Countries;
 /// bare <c>string</c> ASP.NET Core would. The summary starts with "Gets", and
 /// <c>AddDescriptionCleanup()</c> leaves it: it only cleans schemas and parameters.
 /// </remarks>
-internal sealed class GetCountryEndpoint : IEndpoint<CountriesEndpointGroup, CountryDto>
+internal sealed class GetCountryEndpoint : IEndpoint<CountriesEndpointGroup>
 {
     public RouteHandlerBuilder Map(IEndpointRouteBuilder group) =>
         group.MapGet("{id}", Handle)

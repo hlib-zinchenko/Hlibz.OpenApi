@@ -11,8 +11,7 @@ namespace Atlas.Api.Endpoints.Countries;
 /// Gets every country in the atlas, sorted by name.
 /// </summary>
 /// <remarks>Anonymous: no lock in the docs.</remarks>
-internal sealed class GetCountriesEndpoint
-    : IEndpoint<CountriesEndpointGroup, IReadOnlyList<CountryDto>>
+internal sealed class GetCountriesEndpoint : IEndpoint<CountriesEndpointGroup>
 {
     public RouteHandlerBuilder Map(IEndpointRouteBuilder group) =>
         group.MapGet(string.Empty, Handle).WithSummary("Gets every country.");

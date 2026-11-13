@@ -11,7 +11,7 @@ namespace Atlas.Api.Endpoints.Cities;
 /// Gets one city by its id; an unknown id is a <c>404</c>.
 /// </summary>
 /// <remarks>A <see cref="CityId"/> wraps an <see cref="int"/>, so it is documented as one.</remarks>
-internal sealed class GetCityEndpoint : IEndpoint<CitiesEndpointGroup, CityDto>
+internal sealed class GetCityEndpoint : IEndpoint<CitiesEndpointGroup>
 {
     public RouteHandlerBuilder Map(IEndpointRouteBuilder group) =>
         group.MapGet("{id}", Handle)

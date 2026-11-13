@@ -289,24 +289,38 @@ The returned list can feed a document picker, such as the one in
 app.MapReDocDocuments([.. documents.Select(document => new ReDocDocument(document.Name, document.Title))]);
 ```
 
+## Limitations
+
+- **.NET 10 and 11 only.** .NET 9's transformers use Microsoft.OpenApi 1.x, an object model too
+  different to share code with the 2.x and 3.x that .NET 10 and 11 use.
+- **XML comments need a direct reference.** They come from a source generator in
+  Microsoft.AspNetCore.OpenApi, which only runs in a project that references that package
+  itself (see [XML comments](#xml-comments)).
+- **Swashbuckle.** Everything here plugs into Microsoft.AspNetCore.OpenApi's transformers.
+  Swashbuckle uses filters instead, so a port would be a separate `Hlibz.OpenApi.Swashbuckle`
+  package.
+
 ## Sample
 
 [`samples/Atlas.Api`](samples/README.md) is a small geography API that uses every feature above,
 on endpoints written with [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints)
 and rendered by [Hlibz.Redoc.AspNetCore](https://www.nuget.org/packages/Hlibz.Redoc.AspNetCore):
 a public and an admin document, IDs, rules, validation `400`s, locks and cleaned-up
-descriptions, with a `.http`
-file showing the API enforces what the documents say.
+descriptions, with a `.http` file showing the API enforces what the documents say.
 
 ```bash
 dotnet run --project samples/Atlas.Api   # then open http://localhost:5290/api-docs
 ```
 
-## Not here (yet)
+## Related packages
 
-- **Swashbuckle.** Everything here plugs into Microsoft.AspNetCore.OpenApi's transformers.
-  Swashbuckle uses filters instead, so a port would be a separate `Hlibz.OpenApi.Swashbuckle`
-  package.
+- [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints):
+  minimal API endpoints as classes, grouped and checked at build time. The sample's endpoints
+  use it, and each class's `<summary>` becomes its operation description.
+- [Hlibz.Results.AspNetCore](https://www.nuget.org/packages/Hlibz.Results.AspNetCore): one error
+  body for minimal APIs and controllers.
+- [Hlibz.Paging](https://www.nuget.org/packages/Hlibz.Paging): paging and sorting for list
+  endpoints.
 
 ## Versioning
 
@@ -314,6 +328,8 @@ Every package in this repository is released under one version, from one `vX.Y.Z
 Microsoft.AspNetCore.OpenApi is declared as a minimum for each target framework (10.0.14 on
 .NET 10, 11.0.0 on .NET 11). A newer patch of it needs no new release here: reference it in your
 app and NuGet uses it.
+
+Release notes: [GitHub Releases](https://github.com/hlib-zinchenko/Hlibz.OpenApi/releases).
 
 ## License
 

@@ -168,7 +168,7 @@ dotnet_diagnostic.CA1062.severity = none
 
 # CA1710: Identifiers should have correct suffix
 dotnet_code_quality.CA1710.api_surface = all
-dotnet_code_quality.CA1710.additional_required_suffixes = T:Lighthouse.Common.API.Endpoints.IEndpoint->Endpoint|T:Lighthouse.Common.API.Endpoints.IEndpointGroup->EndpointGroup|T:Lighthouse.Common.Core.Contracts.IRequestHandler->Handler|T:FluentValidation.AbstractValidator`1->Validator
+dotnet_code_quality.CA1710.additional_required_suffixes = T:Hlibz.MinimalApi.Endpoints.IEndpoint->Endpoint|T:Hlibz.MinimalApi.Endpoints.IEndpointGroup->EndpointGroup
 
 # CA1716: Identifiers should not match keywords
 dotnet_diagnostic.CA1716.severity = none

@@ -15,7 +15,7 @@ namespace Atlas.Api.Endpoints.Admin;
 /// (<c>uniqueItems</c>), and an <c>[OpenApiRule]</c> on an enum property: the enum is a shared
 /// component, so the sentence goes next to its <c>$ref</c>.
 /// </remarks>
-internal sealed class CreateCountryEndpoint : IEndpoint<AdminAtlasEndpointGroup, CountryDto>
+internal sealed class CreateCountryEndpoint : IEndpoint<AdminAtlasEndpointGroup>
 {
     public RouteHandlerBuilder Map(IEndpointRouteBuilder group) =>
         group.MapPost("countries", Handle)

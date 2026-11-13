@@ -1,4 +1,4 @@
-# Weekly, grouped: one PR for all NuGet updates, one for all GitHub Actions.
+# Weekly, grouped: one PR for all NuGet updates, one for all GitHub Actions, one for the SDK.
 # CI runs the tests on every PR, so a green check is what makes these safe to merge.
 # Microsoft.AspNetCore.OpenApi is a deliberate minimum per target framework (see
 # Directory.Packages.props), never bumped: a new major means a new target framework, by hand.
@@ -15,6 +15,13 @@ updates:
     groups:
       nuget:
         patterns: ["*"]
+  # The SDK pinned in global.json: one PR per new patch, which CI then builds with it.
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
   - package-ecosystem: github-actions
     directory: /
     schedule:

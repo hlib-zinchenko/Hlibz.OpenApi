@@ -21,27 +21,33 @@ jobs:
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: |
-            10.0.x
-            11.0.x
-
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
-
-      - name: Test
-        run: dotnet test --no-build --configuration Release
+          # The SDK global.json pins, plus the .NET 10 runtime the net10.0 tests run on.
+          global-json-file: global.json
+          dotnet-version: 10.0.x
 
       - name: Determine package version from tag
         id: version
         run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Restore
+        run: dotnet restore
+
+      # Built once at the tag's version: the tests run on these binaries, and Pack packs them.
+      - name: Build
+        run: >
+          dotnet build
+          --no-restore
+          --configuration Release
+          -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
       # Every package in the repo shares the version, so one tag releases them together.
       - name: Pack
         run: >
           dotnet pack
+          --no-build
           --configuration Release
           --output ./artifacts
           -p:Version=${{ steps.version.outputs.value }}

@@ -29,3 +29,6 @@ nupkg/
 .DS_Store
 artifacts/
 TestResults/
+
+# Claude Code
+.claude/

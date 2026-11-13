@@ -17,8 +17,7 @@ namespace Atlas.Api.Endpoints.Cities;
 /// <see cref="CountryId"/> and the <see cref="CountryId"/> array, the <c>uuid</c> schema of a
 /// strongly-typed ID. The type's own <c>[OpenApiRule]</c> is appended to this description.
 /// </remarks>
-internal sealed class SearchCitiesEndpoint
-    : IEndpoint<CitiesEndpointGroup, IReadOnlyList<CityDto>>
+internal sealed class SearchCitiesEndpoint : IEndpoint<CitiesEndpointGroup>
 {
     public RouteHandlerBuilder Map(IEndpointRouteBuilder group) =>
         group.MapGet(string.Empty, Handle).WithSummary("Gets the cities matching every filter.");

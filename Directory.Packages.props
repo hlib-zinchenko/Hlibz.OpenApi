@@ -4,7 +4,7 @@
     </PropertyGroup>
     <ItemGroup>
         <!-- Sample-only: the endpoint and ReDoc packages the sample app is built with. -->
-        <PackageVersion Include="Hlibz.MinimalApi.Endpoints" Version="1.0.0-preview.2" />
+        <PackageVersion Include="Hlibz.MinimalApi.Endpoints" Version="1.0.0-preview.4" />
         <PackageVersion Include="Hlibz.Redoc.AspNetCore" Version="2.3.0" />
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
         <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
