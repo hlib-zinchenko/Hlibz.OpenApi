@@ -1,0 +1,13 @@
+<Project>
+
+    <!--
+        Runtime async on .NET 11: async methods compile to runtime-managed suspension instead of
+        a compiler state machine, as the .NET 11 libraries themselves do. In a targets file so a
+        project's own TargetFramework is known. Not before .NET 11, where the runtime's support is
+        a preview API (SYSLIB5007), nor for the netstandard2.0 source generators.
+    -->
+    <PropertyGroup Condition="'$(TargetFramework)' != '' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+        <Features>$(Features);runtime-async=on</Features>
+    </PropertyGroup>
+
+</Project>
