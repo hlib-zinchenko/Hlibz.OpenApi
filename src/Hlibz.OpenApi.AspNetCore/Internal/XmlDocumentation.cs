@@ -8,7 +8,7 @@ using System.Xml.Linq;
 namespace Hlibz.OpenApi.Internal;
 
 /// <summary>
-/// Reads the <c>&lt;summary&gt;</c> of a type or property from the XML documentation file next
+/// Reads the <c>&lt;summary&gt;</c> of a type, property or enum value from the XML documentation file next
 /// to its assembly (<c>GenerateDocumentationFile</c> in a project; a package's own XML file,
 /// which the build copies to the output with <c>CopyDocumentationFilesFromPackages</c>),
 /// flattened to one line: inline code and keywords as markdown code, a <c>&lt;see cref&gt;</c> as
@@ -42,6 +42,13 @@ internal static class XmlDocumentation
             ? Summary(declaringType.Assembly, $"P:{name}.{property.Name}")
             : null;
 
+    /// <summary>Gets the summary of the value named <paramref name="name"/> of the enum <paramref name="type"/>.</summary>
+    /// <param name="type">The enum.</param>
+    /// <param name="name">The value's name, as declared.</param>
+    /// <returns>The summary, or <see langword="null"/> when there is none to read.</returns>
+    public static string? EnumValueSummary(Type type, string name) =>
+        DocumentationName(type) is { } typeName ? Summary(type.Assembly, $"F:{typeName}.{name}") : null;
+
     /// <summary>
     /// Gets where an assembly's XML documentation file is expected: next to the assembly, or, for
     /// an assembly bundled into a single-file app (no location), in the app's directory, where
@@ -57,12 +64,13 @@ internal static class XmlDocumentation
             : Path.ChangeExtension(location, ".xml");
 
     /// <summary>
-    /// The <c>&lt;member&gt;</c>s of types (<c>T:</c>) and properties (<c>P:</c>), the only ones
-    /// ever looked up. Methods, fields and events, usually most of the file, are skipped unread.
+    /// The <c>&lt;member&gt;</c>s of types (<c>T:</c>), properties (<c>P:</c>) and fields (<c>F:</c>,
+    /// for enum values), the only ones ever looked up. Methods and events, usually most of the
+    /// file, are skipped unread.
     /// </summary>
     /// <param name="path">The XML documentation file.</param>
     /// <returns>The members, in file order.</returns>
-    internal static IEnumerable<XElement> TypeAndPropertyMembers(string path)
+    internal static IEnumerable<XElement> DocumentedMembers(string path)
     {
         using XmlReader reader = XmlReader.Create(path, new XmlReaderSettings { IgnoreComments = true });
         reader.MoveToContent();
@@ -80,7 +88,8 @@ internal static class XmlDocumentation
             string? name = reader.GetAttribute("name");
             if (name is not null
                 && (name.StartsWith("T:", StringComparison.Ordinal)
-                    || name.StartsWith("P:", StringComparison.Ordinal)))
+                    || name.StartsWith("P:", StringComparison.Ordinal)
+                    || name.StartsWith("F:", StringComparison.Ordinal)))
             {
                 yield return (XElement)XNode.ReadFrom(reader);
             }
@@ -119,7 +128,7 @@ internal static class XmlDocumentation
         }
 
         Dictionary<string, string> recordParameters = new(StringComparer.Ordinal);
-        foreach (XElement member in TypeAndPropertyMembers(path))
+        foreach (XElement member in DocumentedMembers(path))
         {
             string name = member.Attribute("name")!.Value;
             if (member.Element("summary") is { } summary && Flatten(summary) is { Length: > 0 } text)

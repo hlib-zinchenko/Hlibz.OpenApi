@@ -10,11 +10,24 @@ namespace Atlas.Api.Domain;
 [JsonConverter(typeof(JsonStringEnumConverter<Continent>))]
 public enum Continent
 {
+    /// <summary>Africa.</summary>
     Africa,
+
+    /// <summary>Antarctica, which no country lies on.</summary>
     Antarctica,
+
+    /// <summary>Asia, including the Middle East.</summary>
     Asia,
+
+    /// <summary>Europe.</summary>
     Europe,
+
+    /// <summary>North America, including Central America and the Caribbean.</summary>
     NorthAmerica,
+
+    /// <summary>Australia, New Zealand and the Pacific islands.</summary>
     Oceania,
+
+    /// <summary>South America.</summary>
     SouthAmerica,
 }

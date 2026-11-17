@@ -150,6 +150,53 @@ public sealed class XmlDocumentationTests
     }
 
     [Fact]
+    public async Task AddXmlDocumentation_StringEnum_DescribesEveryValueAsJsonWritesIt()
+    {
+        JsonElement document = await StartAsync(options => options.AddXmlDocumentation());
+
+        JsonElement view = document.Schema("View");
+        Assert.Equal("What a room looks out on.", view.GetProperty("description").GetString());
+        Assert.Equal(
+            [("Sea", "The sea, on the `south` side."), ("old-town", "The old town."), ("Courtyard", string.Empty)],
+            EnumDescriptions(view));
+    }
+
+    [Fact]
+    public async Task AddXmlDocumentation_IntegerEnum_KeysDescriptionsByNumber()
+    {
+        JsonElement document = await StartAsync(options => options.AddXmlDocumentation());
+
+        Assert.Equal([("1", "One single bed."), ("2", "One double bed.")], EnumDescriptions(document.Schema("Beds")));
+    }
+
+    [Fact]
+    public async Task AddXmlDocumentation_EnumWithoutValueSummaries_GetsNoEnumDescriptions()
+    {
+        JsonElement document = await StartAsync(options => options.AddXmlDocumentation());
+
+        Assert.False(document.Schema("Colour").TryGetProperty("x-enumDescriptions", out _));
+    }
+
+    /// <summary>
+    /// A query parameter binds with <c>Enum.TryParse</c>: .NET 11 inlines its schema with the
+    /// declared names (<c>OldTown</c>), .NET 10 refers to the enum's component (<c>old-town</c>).
+    /// Either way the descriptions are keyed as the schema lists the values.
+    /// </summary>
+    [Fact]
+    public async Task AddXmlDocumentation_EnumQueryParameter_KeysDescriptionsAsSchemaListsValues()
+    {
+        JsonElement document = await StartAsync(options => options.AddXmlDocumentation());
+
+        JsonElement view = Resolve(document, document.Operation("/views").Parameter("view").GetProperty("schema"));
+        string?[] listed = [.. view.GetProperty("enum").EnumerateArray().Select(value => value.GetString())];
+        (string Value, string? Description)[] descriptions = EnumDescriptions(view);
+        Assert.Equal(listed, descriptions.Select(description => description.Value));
+        Assert.Equal(
+            ["The sea, on the `south` side.", "The old town.", string.Empty],
+            descriptions.Select(description => description.Description));
+    }
+
+    [Fact]
     public void DocumentationPath_WithLocation_IsNextToAssembly()
     {
         string location = Path.Combine("app", "lib", "Domain.dll");
@@ -168,7 +215,7 @@ public sealed class XmlDocumentationTests
     }
 
     [Fact]
-    public void TypeAndPropertyMembers_AdjacentMembersAmongMethods_ReadsOnlyTypesAndProperties()
+    public void DocumentedMembers_AdjacentMembersAmongMethods_ReadsTypesPropertiesAndFields()
     {
         string path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.xml");
         const string Xml = "<doc><members>"
@@ -183,9 +230,9 @@ public sealed class XmlDocumentationTests
         try
         {
             string?[] names =
-                [.. XmlDocumentation.TypeAndPropertyMembers(path).Select(member => member.Attribute("name")?.Value)];
+                [.. XmlDocumentation.DocumentedMembers(path).Select(member => member.Attribute("name")?.Value)];
 
-            Assert.Equal(["T:A", "P:A.B", "P:A.C", "T:E"], names);
+            Assert.Equal(["T:A", "P:A.B", "P:A.C", "F:A.D", "T:E"], names);
         }
         finally
         {
@@ -202,6 +249,15 @@ public sealed class XmlDocumentationTests
             .Single(branch => branch.TryGetProperty("$ref", out _))
             .GetProperty("description").GetString();
 
+    private static (string Value, string? Description)[] EnumDescriptions(JsonElement schema) =>
+        [.. schema.GetProperty("x-enumDescriptions").EnumerateObject().Select(value => (value.Name, value.Value.GetString()))];
+
+    /// <summary>The component a schema refers to, or the schema itself when it's inline.</summary>
+    private static JsonElement Resolve(JsonElement document, JsonElement schema) =>
+        schema.TryGetProperty("$ref", out JsonElement reference)
+            ? document.Schema(reference.GetString()!.Split('/')[^1])
+            : schema;
+
     private static async Task<JsonElement> StartAsync(Action<OpenApiOptions> configure)
     {
         HttpClient client = await TestApp.StartAsync(
@@ -213,6 +269,7 @@ public sealed class XmlDocumentationTests
                 app.MapGet("house", () => TypedResults.Ok(new House()));
                 app.MapGet("bearer", () => TypedResults.Ok(new BearerSecurityOptions()));
                 app.MapGet("wings", () => TypedResults.Ok(new Wings(new WingId(1))));
+                app.MapGet("views", (View view) => TypedResults.Ok(new Paint()));
             });
         return await client.GetDocumentAsync();
     }
@@ -277,7 +334,33 @@ internal sealed record Wings(WingId Wing);
 
 /// <summary>A room.</summary>
 /// <param name="Number">The room's number.</param>
-internal sealed record Room(int Number);
+/// <param name="View">What the room looks out on.</param>
+/// <param name="Beds">The room's beds.</param>
+internal sealed record Room(int Number, View View = View.Sea, Beds Beds = Beds.Single);
+
+/// <summary>What a room looks out on.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<View>))]
+internal enum View
+{
+    /// <summary>The sea, on the <c>south</c> side.</summary>
+    Sea,
+
+    /// <summary>The old town.</summary>
+    [System.Text.Json.Serialization.JsonStringEnumMemberName("old-town")]
+    OldTown,
+
+    Courtyard,
+}
+
+/// <summary>The beds in a room.</summary>
+internal enum Beds
+{
+    /// <summary>One single bed.</summary>
+    Single = 1,
+
+    /// <summary>One double bed.</summary>
+    Double = 2,
+}
 
 /// <summary>
 /// A house

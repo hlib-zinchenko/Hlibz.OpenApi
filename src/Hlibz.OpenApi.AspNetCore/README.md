@@ -16,7 +16,7 @@ dotnet add package Hlibz.OpenApi.AspNetCore
 using Hlibz.OpenApi;
 
 builder.Services.AddOpenApi("v1", options => options
-    .AddXmlDocumentation()    // <summary>s as descriptions, internal types and packages included
+    .AddXmlDocumentation()    // <summary>s as descriptions (enum values too), internal types and packages included
     .AddOpenApiRules()        // custom validation attributes describe themselves (IOpenApiRule)
     .AddStronglyTypedIds()    // CountryId(Guid Value) → { "type": "string", "format": "uuid" }
     .AddValidationProblems()  // the 400 AddValidation() answers with, where it can

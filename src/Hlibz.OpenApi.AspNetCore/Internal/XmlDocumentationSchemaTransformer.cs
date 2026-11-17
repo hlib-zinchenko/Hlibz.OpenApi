@@ -7,7 +7,8 @@ namespace Hlibz.OpenApi.Internal;
 /// <summary>
 /// Publishes XML <c>&lt;summary&gt;</c>s as schema descriptions: a type's on its own schema, a
 /// property's on the property, or next to the property's <c>$ref</c> when its schema becomes a
-/// component, so one property's summary never lands on the component every other use shares.
+/// component, so one property's summary never lands on the component every other use shares; an
+/// enum's value summaries as <see cref="EnumValueDescriptions.ExtensionName"/>.
 /// </summary>
 /// <remarks>
 /// It replaces whatever description is there (Microsoft.AspNetCore.OpenApi's generator writes one
@@ -36,6 +37,15 @@ internal sealed class XmlDocumentationSchemaTransformer : IOpenApiSchemaTransfor
             && XmlDocumentation.TypeSummary(type) is { } typeSummary)
         {
             schema.Description = WithRules(typeSummary, RuleText.Read(schema));
+        }
+
+        // Unlike the type's summary, the values' summaries go wherever the enum's schema is: they
+        // describe the values the schema lists, whoever uses it.
+        if (type.IsEnum
+            && EnumValueDescriptions.Read(type, context.JsonTypeInfo.Options, schema) is { } values)
+        {
+            schema.Extensions ??= new Dictionary<string, IOpenApiExtension>(StringComparer.Ordinal);
+            schema.Extensions[EnumValueDescriptions.ExtensionName] = new JsonNodeExtension(values);
         }
 
         if (context.JsonPropertyInfo?.AttributeProvider is not PropertyInfo property

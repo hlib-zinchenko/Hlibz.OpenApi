@@ -11,8 +11,9 @@ public static class XmlDocumentationOptionsExtensions
     /// Microsoft.AspNetCore.OpenApi's own XML comment generator, it covers <c>internal</c> types
     /// and types from other projects and packages, writes a <c>&lt;see cref&gt;</c> as the name it
     /// refers to and puts each summary on one line. A record's <c>&lt;param&gt;</c> describes its
-    /// positional property. It replaces the generator's descriptions where it has a summary;
-    /// operation descriptions are left alone. Types from NuGet packages are described when the
+    /// positional property, and each enum value's summary goes in <c>x-enumDescriptions</c> on the
+    /// enum's schema (what ReDoc and Scalar show as a table of values). It replaces the generator's
+    /// descriptions where it has a summary; operation descriptions are left alone. Types from NuGet packages are described when the
     /// app sets <c>CopyDocumentationFilesFromPackages</c>, so their XML files are copied too.
     /// </summary>
     /// <param name="options">The document's options.</param>

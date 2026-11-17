@@ -25,7 +25,11 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
   there (`x-rules`, or the parked rules of a would-be `$ref`), so its order against
   `AddOpenApiRules()` doesn't matter; a property that will be a `$ref` gets its summary in
   `x-ref-description`. Operations are left alone, and so is the type summary on a path, query or
-  header parameter's schema. Package XML files reach `bin` and publish output only with
+  header parameter's schema. Enum values' summaries (`F:` members) go in `x-enumDescriptions`
+  (`Internal/EnumValueDescriptions`), every value listed since ReDoc shows it in place of `enum`,
+  keyed as the schema's `enum` lists them: JSON names, numbers, or declared names (a query
+  parameter binds with `Enum.TryParse`; .NET 11 inlines it with those, .NET 10 `$ref`s the
+  component). Package XML files reach `bin` and publish output only with
   `CopyDocumentationFilesFromPackages` (checked on the 11.0.100 SDK).
 - `AddStronglyTypedIds(configure?)`: rewrites ID schemas to the wrapped type's schema and
   inlines them (removes `x-schema-id`, `x-is-nullable-property`), applying any `x-ref-description`

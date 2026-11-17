@@ -13,7 +13,7 @@ OpenAPI document says.
 
 | Feature | Call | What it does |
 |---|---|---|
-| [XML documentation](#xml-documentation) | `AddXmlDocumentation()` | `<summary>` comments as descriptions, internal types and packages included. |
+| [XML documentation](#xml-documentation) | `AddXmlDocumentation()` | `<summary>` comments as descriptions, enum values, internal types and packages included. |
 | [Self-describing rules](#self-describing-validation-rules) | `AddOpenApiRules()` | Custom validation attributes write their own schema keywords and text. |
 | [Strongly-typed IDs](#strongly-typed-ids) | `AddStronglyTypedIds()` | `CountryId(Guid Value)` is published as `string`/`uuid`, not an object. |
 | [Validation problems](#validation-problems) | `AddValidationProblems()` | The `400` that `AddValidation()` answers with, on exactly the operations it can come from. |
@@ -44,7 +44,7 @@ app.MapOpenApi();
 ## XML documentation
 
 `AddXmlDocumentation()` publishes XML `<summary>` comments as the descriptions of schemas, their
-properties and `[AsParameters]` parameters. It reads them at runtime from the XML file next to
+properties, enum values and `[AsParameters]` parameters. It reads them at runtime from the XML file next to
 each assembly, so turn the file on in every project whose types you want described:
 
 ```xml
@@ -69,11 +69,18 @@ On a real API it misses a lot:
 | Types from other projects and NuGet packages | skipped | described, from their XML files (packages': see below) |
 | `<see cref="City.Name"/>` | "a `string` City.Name" | "City.Name" |
 | A summary over several lines | keeps the line breaks | one line |
+| An enum value's summary | skipped | in `x-enumDescriptions` |
 | Runs when | the app references Microsoft.AspNetCore.OpenApi (directly, or through this package) and calls `AddOpenApi(name, ...)` itself | always |
 
 - A record's `<param>` tag describes its positional property.
 - A property whose schema becomes a component (a DTO, an enum) gets its summary next to its
   `$ref`, so it never lands on the component every other use shares.
+- Each enum value's summary goes in `x-enumDescriptions` on the enum's schema, which ReDoc and
+  Scalar show as a table of values. It's keyed as the schema lists the values: the JSON name
+  (after `JsonStringEnumConverter`'s naming policy and `[JsonStringEnumMemberName]`), the number
+  for an integer enum, or the declared name where a query parameter's schema lists those. Every
+  value is listed, an undocumented one with an empty description, because ReDoc shows this list
+  in place of `enum`. An enum with no value summaries gets none.
 - `<remarks>` are never read: keep notes for developers there.
 - It replaces the generator's descriptions wherever it has a summary, so both can be on. The
   generator still writes operation descriptions from handler methods' summaries;
