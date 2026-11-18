@@ -58,7 +58,7 @@ Core passes the parameter's `ParameterDescription` to *every* schema under it (a
 schema too), and describes a `TryParse`-bound parameter as `string`. Use it rather than reading
 `ParameterDescription` directly.
 
-- `samples/Atlas.Api`: every feature on Hlibz.MinimalApi.Endpoints (NuGet `1.0.0-preview.5`: each
+- `samples/Atlas.Api`: every feature on Hlibz.MinimalApi.Endpoints (NuGet `1.0.0`: each
   endpoint's `Map(group)` makes one `MapGet`/`MapPost` call, a group's `Configure(group)` sets its
   tags and policy, and an endpoint class's `<summary>` becomes its operation description, so write
   those for API readers and keep notes in `<remarks>`) and Hlibz.Redoc.AspNetCore,
