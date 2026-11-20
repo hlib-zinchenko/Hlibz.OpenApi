@@ -26,9 +26,9 @@ public static class RuleText
 
         schema.Extensions ??= new Dictionary<string, IOpenApiExtension>(StringComparer.Ordinal);
         JsonArray rules = schema.Extensions.TryGetValue(ExtensionName, out IOpenApiExtension? existing)
-                          && existing is JsonNodeExtension { Node: JsonArray array }
-            ? array
-            : [];
+            && existing is JsonNodeExtension { Node: JsonArray array }
+                ? array
+                : [];
         if (rules.Any(rule => rule?.GetValue<string>() == text))
         {
             return;

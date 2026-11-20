@@ -6,9 +6,9 @@
         <!-- Sample-only: the endpoint and ReDoc packages the sample app is built with. -->
         <PackageVersion Include="Hlibz.MinimalApi.Endpoints" Version="1.0.0" />
         <PackageVersion Include="Hlibz.Redoc.AspNetCore" Version="2.5.0" />
-        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
-        <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
-        <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+        <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.36.0.15337" />
+        <PackageVersion Include="StyleCop.Analyzers" Version="1.3.180" />
         <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
         <PackageVersion Include="xunit.v3" Version="4.0.3" />
     </ItemGroup>
