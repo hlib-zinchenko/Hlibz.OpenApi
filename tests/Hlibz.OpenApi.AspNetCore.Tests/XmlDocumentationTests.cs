@@ -276,6 +276,16 @@ public sealed class XmlDocumentationTests
 }
 
 /// <summary>
+/// A house
+/// on one line.
+/// </summary>
+public sealed class House
+{
+    /// <summary>Gets the owner, a <see cref="ChangePassword.Password"/> when it's <see langword="null"/>.</summary>
+    public string? Owner { get; init; }
+}
+
+/// <summary>
 /// Books a <c>room</c>
 /// for one night.
 /// </summary>
@@ -360,14 +370,4 @@ internal enum Beds
 
     /// <summary>One double bed.</summary>
     Double = 2,
-}
-
-/// <summary>
-/// A house
-/// on one line.
-/// </summary>
-public sealed class House
-{
-    /// <summary>Gets the owner, a <see cref="ChangePassword.Password"/> when it's <see langword="null"/>.</summary>
-    public string? Owner { get; init; }
 }

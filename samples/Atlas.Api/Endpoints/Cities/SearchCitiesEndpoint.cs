@@ -28,9 +28,10 @@ internal sealed class SearchCitiesEndpoint : IEndpoint<CitiesEndpointGroup>
     {
         HashSet<CountryId>? countries = query.Codes is null
             ? null
-            : [.. store.Countries
+            : store.Countries
                 .Where(country => query.Codes.Contains(country.Code, StringComparer.Ordinal))
-                .Select(country => country.Id)];
+                .Select(country => country.Id)
+                .ToHashSet();
 
         IReadOnlyList<CityDto> cities =
         [
