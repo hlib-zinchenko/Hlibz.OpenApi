@@ -161,3 +161,27 @@ public sealed class Settings
     [Range(1, 100)]
     public int PageSize { get; set; } = 10;
 }
+
+/// <summary>DataAnnotations and a rule on positional record parameters.</summary>
+public sealed record BookTable(
+    [Range(1, 5)] int Seats,
+    [StringLength(20, MinimumLength = 2)] string Note,
+    [MinLength(1), MaxLength(3)] IReadOnlyList<string> Guests,
+    [Range(0d, 1d, MinimumIsExclusive = true)] double Deposit,
+    [RegularExpression("^[a-z]+$")] string Slug,
+    [Url] string Site,
+    [StrongPassword] string Code);
+
+/// <summary>A rule that describes itself through something other than <see cref="IOpenApiRule"/>.</summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class PlainRuleAttribute(string text) : Attribute
+{
+    public string Text { get; } = text;
+}
+
+/// <summary>Holds rules from a source: <see cref="PlainRuleAttribute"/>.</summary>
+[PlainRule("Only on weekdays.")]
+public sealed record Meeting(
+    [PlainRule("Ten people at most.")] int People,
+    [property: PlainRule("Never the same name twice.")] string Name,
+    [PlainRule("Bring a pen.")] Colour Colour);

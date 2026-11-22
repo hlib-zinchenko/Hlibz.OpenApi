@@ -18,7 +18,8 @@ namespace Hlibz.OpenApi.Internal;
 /// after all (<see cref="StronglyTypedIdSchemaTransformer"/>) to apply in full, and their
 /// sentences under <see cref="PendingRuleTextKey"/>.
 /// </remarks>
-internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
+/// <param name="rules">The document's rules.</param>
+internal sealed class OpenApiRuleSchemaTransformer(RuleReader rules) : IOpenApiSchemaTransformer
 {
     /// <summary>The metadata key the rules of a would-be <c>$ref</c> are parked under.</summary>
     internal const string PendingRulesKey = "x-hlibz-pending-rules";
@@ -38,15 +39,15 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
         OpenApiSchemaTransformerContext context,
         CancellationToken cancellationToken)
     {
-        IOpenApiRule[] rules = [.. FindRules(context)];
-        if (rules.Length == 0)
+        IOpenApiRule[] found = [.. FindRules(context)];
+        if (found.Length == 0)
         {
             return Task.CompletedTask;
         }
 
         if (context.JsonPropertyInfo is null || !IsReference(schema))
         {
-            foreach (IOpenApiRule rule in rules)
+            foreach (IOpenApiRule rule in found)
             {
                 rule.Describe(schema);
             }
@@ -55,7 +56,7 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
         }
 
         OpenApiSchema scratch = new();
-        foreach (IOpenApiRule rule in rules)
+        foreach (IOpenApiRule rule in found)
         {
             rule.Describe(scratch);
         }
@@ -75,7 +76,7 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
             metadata[RefDescriptionKey] = description;
         }
 
-        metadata[PendingRulesKey] = rules;
+        metadata[PendingRulesKey] = found;
         metadata[PendingRuleTextKey] = text;
 
         return Task.CompletedTask;
@@ -85,14 +86,22 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
         schema.Metadata?.TryGetValue(SchemaIdKey, out object? id) == true
         && !string.IsNullOrEmpty(id as string);
 
-    private static IEnumerable<IOpenApiRule> FindRules(OpenApiSchemaTransformerContext context)
+    private IEnumerable<IOpenApiRule> FindRules(OpenApiSchemaTransformerContext context)
     {
         if (context.JsonPropertyInfo is { } property)
         {
-            return property.AttributeProvider is { } provider ? RuleAttributes.For(provider) : [];
+            IEnumerable<IOpenApiRule> propertyRules = property.AttributeProvider is { } provider
+                ? rules.For(provider)
+                : [];
+
+            // A positional record's attributes sit on its constructor parameter, which
+            // Microsoft.AspNetCore.OpenApi doesn't read: its DataAnnotations neither.
+            return property.AssociatedParameter?.AttributeProvider is ParameterInfo recordParameter
+                ? propertyRules.Concat(rules.ForRecordParameter(recordParameter)).Distinct()
+                : propertyRules;
         }
 
-        IOpenApiRule[] typeRules = RuleAttributes.ForType(
+        IOpenApiRule[] typeRules = rules.ForType(
             Nullable.GetUnderlyingType(context.JsonTypeInfo.Type) ?? context.JsonTypeInfo.Type);
 
         // Only the parameter's own schema: an array parameter's item schema comes with the same
@@ -112,16 +121,16 @@ internal sealed class OpenApiRuleSchemaTransformer : IOpenApiSchemaTransformer
     /// surfaces it as a <see cref="ParameterInfo"/> whose member is the property or, for a
     /// constructor-bound type, the type declaring a property of the same name.
     /// </summary>
-    private static IEnumerable<IOpenApiRule> FindParameterRules(ParameterInfo parameter)
+    private IEnumerable<IOpenApiRule> FindParameterRules(ParameterInfo parameter)
     {
-        IEnumerable<IOpenApiRule> rules = RuleAttributes.ForParameter(parameter);
+        IEnumerable<IOpenApiRule> parameterRules = rules.ForParameter(parameter);
         if (parameter.Member is Type type
             && parameter.Name is { } name
             && type.GetProperty(name) is { } property)
         {
-            rules = rules.Concat(RuleAttributes.For(property));
+            parameterRules = parameterRules.Concat(rules.For(property));
         }
 
-        return rules.Distinct();
+        return parameterRules.Distinct();
     }
 }

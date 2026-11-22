@@ -56,7 +56,7 @@ jobs:
             grep -q "<readme>README.md</readme>" package.nuspec
             grep -q "<icon>icon.png</icon>" package.nuspec
           done
-          test "$(ls ./artifacts/*.nupkg | wc -l)" -eq 1
+          test "$(ls ./artifacts/*.nupkg | wc -l)" -eq 2
           # The target that lets Microsoft.AspNetCore.OpenApi's interceptors compile in an app
           # referencing only this package.
           unzip -l ./artifacts/Hlibz.OpenApi.AspNetCore.[0-9]*.nupkg > contents.txt

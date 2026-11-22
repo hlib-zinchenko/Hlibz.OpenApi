@@ -12,7 +12,8 @@ namespace Hlibz.OpenApi.Internal;
 /// the rules on an <c>[AsParameters]</c> type, which has no schema of its own, go in the
 /// operation's description.
 /// </summary>
-internal sealed class OpenApiRuleParameterOperationTransformer : IOpenApiOperationTransformer
+/// <param name="rules">The document's rules.</param>
+internal sealed class OpenApiRuleParameterOperationTransformer(RuleReader rules) : IOpenApiOperationTransformer
 {
     public Task TransformAsync(
         OpenApiOperation operation,
@@ -22,12 +23,12 @@ internal sealed class OpenApiRuleParameterOperationTransformer : IOpenApiOperati
         foreach (OpenApiParameter parameter in (operation.Parameters ?? []).OfType<OpenApiParameter>())
         {
             if (parameter.Schema is not OpenApiSchema schema
-                || RuleText.Read(schema) is not { Count: > 0 } rules)
+                || RuleText.Read(schema) is not { Count: > 0 } sentences)
             {
                 continue;
             }
 
-            foreach (string rule in rules)
+            foreach (string rule in sentences)
             {
                 parameter.Description = RuleText.Append(parameter.Description, rule);
                 schema.Description = RuleText.Remove(schema.Description, rule);
@@ -54,7 +55,7 @@ internal sealed class OpenApiRuleParameterOperationTransformer : IOpenApiOperati
     /// <see cref="ParameterInfo.Member"/> is the property or, for a constructor-bound type, the
     /// type itself.
     /// </summary>
-    private static IEnumerable<IOpenApiRule> AsParametersTypeRules(
+    private IEnumerable<IOpenApiRule> AsParametersTypeRules(
         IEnumerable<ApiParameterDescription> parameters) =>
         parameters
             .Select(parameter => parameter.ParameterDescriptor)
@@ -67,5 +68,5 @@ internal sealed class OpenApiRuleParameterOperationTransformer : IOpenApiOperati
             })
             .OfType<Type>()
             .Distinct()
-            .SelectMany(RuleAttributes.ForType);
+            .SelectMany(rules.ForType);
 }

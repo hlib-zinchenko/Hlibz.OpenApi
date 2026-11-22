@@ -4,8 +4,10 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Hlibz.OpenApi.AspNetCore/Hlibz.OpenApi.AspNetCore.csproj" />
+    <Project Path="src/Hlibz.OpenApi.UseCases/Hlibz.OpenApi.UseCases.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Hlibz.OpenApi.AspNetCore.Tests/Hlibz.OpenApi.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Hlibz.OpenApi.UseCases.Tests/Hlibz.OpenApi.UseCases.Tests.csproj" />
   </Folder>
 </Solution>

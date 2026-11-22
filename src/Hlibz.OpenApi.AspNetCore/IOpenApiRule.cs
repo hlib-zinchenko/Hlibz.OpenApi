@@ -2,7 +2,7 @@ namespace Hlibz.OpenApi;
 
 /// <summary>
 /// A validation attribute that says what it checks in the OpenAPI schema of the property or
-/// parameter it sits on. Registered with <see cref="OpenApiRuleOptionsExtensions.AddOpenApiRules"/>.
+/// parameter it sits on. Registered with <see cref="OpenApiRuleOptionsExtensions.AddOpenApiRules(OpenApiOptions)"/>.
 /// </summary>
 /// <remarks>
 /// DataAnnotations' own attributes (<c>[Required]</c>, <c>[Range]</c>, <c>[RegularExpression]</c>,

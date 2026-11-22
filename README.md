@@ -5,7 +5,8 @@
 [![CI](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml/badge.svg)](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/hlib-zinchenko/Hlibz.OpenApi/blob/main/LICENSE)<br>
 [![Hlibz.OpenApi.AspNetCore](https://img.shields.io/nuget/v/Hlibz.OpenApi.AspNetCore?label=Hlibz.OpenApi.AspNetCore)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)
-[![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.AspNetCore?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)
+[![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.AspNetCore?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)<br>
+[![Hlibz.OpenApi.UseCases](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.UseCases?label=Hlibz.OpenApi.UseCases)](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases)
 
 Transformers for [Microsoft.AspNetCore.OpenApi](https://learn.microsoft.com/aspnet/core/fundamentals/openapi/overview)
 (`AddOpenApi()` / `MapOpenApi()`) that fill the gaps between what your API checks and what its
@@ -20,6 +21,7 @@ OpenAPI document says.
 | [Security](#security) | `AddBearerSecurity()`, `AddSecurity(...)` | A lock on exactly the endpoints that require authorization. |
 | [Description cleanup](#description-cleanup) | `AddDescriptionCleanup()` | "Gets or sets the name." reads "The name.". |
 | [Several documents](#several-documents) | `services.AddOpenApiDocuments(...)` | One document per endpoint group, configured once. |
+| [Use cases](#use-cases) | `AddUseCases()` | [Hlibz.UseCases](https://github.com/hlib-zinchenko/Hlibz.UseCases)' rules and validation `400`s. A package of its own: `Hlibz.OpenApi.UseCases`. |
 
 Targets .NET 10 and 11.
 
@@ -154,12 +156,30 @@ public sealed class ChangePassword
   An `[AsParameters]` type has no schema of its own, so its type-level rules go in the
   operation's description instead.
 
+- **Positional records.** An attribute written on a record's constructor parameter,
+  `record CreateCity([MaxLength(60)] string Name)`, sits on the parameter, not the property, and
+  Microsoft.AspNetCore.OpenApi reads properties only. `AddOpenApiRules()` reads the parameter
+  too: its `IOpenApiRule`s, and DataAnnotations' own `[Range]`, `[MinLength]`, `[MaxLength]`,
+  `[Length]`, `[StringLength]`, `[RegularExpression]`, `[Url]` and `[Base64String]`, written as
+  ASP.NET Core writes them on a property.
+
 - **A property whose type is a component schema** (an enum, a DTO) is published as a `$ref`, and
   every other use shares that component. The rule's sentence goes next to the `$ref`, where the
   XML summary goes too. The rule's keywords are dropped, so they don't end up on the shared
   component.
 
 The attributes still validate as usual, for example under .NET 10's `AddValidation()`.
+
+**Rules from elsewhere.** Attributes that describe themselves through another library's
+interface plug in as a source: a function from a type, property or parameter to the
+`IOpenApiRule`s it carries. Their rules are written exactly as `IOpenApiRule` attributes are,
+`$ref`s included. Each source is asked once per type, member and parameter. Calling
+`AddOpenApiRules` again on the same document only adds sources; the rules are written once.
+
+```csharp
+options.AddOpenApiRules(rules => rules.Sources.Add(provider =>
+    provider.GetCustomAttributes(inherit: true).OfType<IMyRule>().Select(MyRuleAdapter.Wrap)));
+```
 
 ## Strongly-typed IDs
 
@@ -351,6 +371,41 @@ The returned list can feed a document picker, such as the one in
 app.MapReDocDocuments([.. documents.Select(document => new ReDocDocument(document.Name, document.Title))]);
 ```
 
+## Use cases
+
+`Hlibz.OpenApi.UseCases` publishes what [Hlibz.UseCases](https://github.com/hlib-zinchenko/Hlibz.UseCases)'
+use cases check: their rules, and the `400` an invalid one is answered with.
+
+```bash
+dotnet add package Hlibz.OpenApi.UseCases --prerelease
+```
+
+```csharp
+builder.Services.AddUseCases([typeof(CreateCityCommand).Assembly]);
+builder.Services.AddOpenApi("v1", options => options
+    .AddXmlDocumentation()
+    .AddUseCases(useCases => useCases.ValidationResponseType = typeof(ErrorResponse)));
+
+app.MapPost("cities", async (CreateCityCommand command, ICreateCityCommandHandler handler) =>
+    (await handler.HandleAsync(command)).ToHttpResult());
+```
+
+- **Rules.** Every `IDescribedRule` (a custom validation attribute) and `[RuleSummary]` becomes
+  schema keywords plus a sentence in `description` and `x-rules`, on the property, record
+  parameter, parameter or type it sits on. `AddUseCases()` turns on
+  [`AddOpenApiRules()`](#self-describing-validation-rules) with them as a source, so they are
+  written exactly as `IOpenApiRule`s are, and DataAnnotations on positional record parameters,
+  the usual way to write a use case, are published too.
+- **The `400`.** An operation whose handler takes the handler of a use case that can fail
+  validation (its own interface or `IUseCaseHandler<...>`, as the use case catalog says) gets a
+  `400` with `HttpValidationProblemDetails`, or the `ValidationResponseType` you set, such as
+  Hlibz.Results' `ErrorResponse`. One that already documents a `400` keeps its own.
+- **Only the HTTP contract is described.** A use case's rules reach the document on types the
+  endpoint binds: bind the use case itself (as the body, or with `[AsParameters]`), or give it a
+  record that is also the body (`UpdateCityCommand(int Id, CityChanges Changes)`).
+
+It's released with Hlibz.OpenApi.AspNetCore, and as a preview while Hlibz.UseCases is one.
+
 ## Documents at build time
 
 Clients needn't wait for a running API to get the documents: ASP.NET Core's
@@ -420,6 +475,8 @@ dotnet run --project samples/Atlas.Api   # then open http://localhost:5290/api-d
   body for minimal APIs and controllers.
 - [Hlibz.Paging](https://www.nuget.org/packages/Hlibz.Paging): paging and sorting for list
   endpoints.
+- [Hlibz.UseCases](https://www.nuget.org/packages/Hlibz.UseCases): use cases with generated
+  pipelines and DataAnnotations validation, published by `Hlibz.OpenApi.UseCases`.
 
 ## Versioning
 

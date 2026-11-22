@@ -4,10 +4,11 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-One NuGet package so far, `src/Hlibz.OpenApi.AspNetCore`: transformers for
-Microsoft.AspNetCore.OpenApi. The repo is named after the package family; a later
+Two NuGet packages, released together under one version: `src/Hlibz.OpenApi.AspNetCore`,
+transformers for Microsoft.AspNetCore.OpenApi, and `src/Hlibz.OpenApi.UseCases`, which publishes
+Hlibz.UseCases (below). The repo is named after the package family; a later
 `Hlibz.OpenApi.Swashbuckle` (filters) or a dependency-free `Hlibz.OpenApi.Rules`
-(`IOpenApiRule` + `RuleText`) would sit next to it. `OPENAPI_PACKAGE_FINDINGS.md` records why the
+(`IOpenApiRule` + `RuleText`) would sit next to them. `OPENAPI_PACKAGE_FINDINGS.md` records why the
 package looks the way it does (what was ported from Lighthouse, what was dropped and why).
 
 Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `OpenApiOptions`:
@@ -15,6 +16,14 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
 - `AddOpenApiRules()`: `IOpenApiRule` attributes describe themselves (`RuleText.Add` writes
   `description` + `x-rules`); `[OpenApiRule("...")]` for text-only rules. A parameter's rules are
   also copied to the parameter's description (`Internal/OpenApiRuleParameterOperationTransformer`).
+  `AddOpenApiRules(rules => rules.Sources.Add(...))` adds rule sources (other libraries'
+  self-describing attributes, as `IOpenApiRule`s); `Internal/RuleReader` is one document's
+  attributes plus sources, cached. It registers its transformers once per `OpenApiOptions`
+  (a `ConditionalWeakTable`): a later call only adds sources, so `AddUseCases()` and the app's
+  own `AddOpenApiRules()` share one transformer whatever their order. A positional record's
+  constructor parameter is read too (`JsonPropertyInfo.AssociatedParameter`), with its
+  DataAnnotations (`Internal/ParameterAnnotations`), which Microsoft.AspNetCore.OpenApi reads from
+  properties only (checked on both target frameworks).
   A property whose schema will become a `$ref` gets its rule text in `x-ref-description` only, and
   its rules parked under `PendingRulesKey`.
 - `AddXmlDocumentation()`: `Internal/XmlDocumentation` reads `<summary>`s (and a record's
@@ -52,6 +61,17 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
 - `AddDescriptionCleanup()`: a *document* transformer (runs last, after XML comments and `$ref`
   descriptions are in place); schemas and parameters only, never operation text.
 - `services.AddOpenApiDocuments(definitions, addOpenApi, configure)`: one document per group.
+
+`Hlibz.OpenApi.UseCases` (namespace `Hlibz.OpenApi`, depends on Hlibz.UseCases, a minimum, and
+on Hlibz.OpenApi.AspNetCore at the same version): `AddUseCases(configure?)` adds
+`Internal/DescribedRules` (each `IDescribedRule`'s `RuleDescription` as an `IOpenApiRule`) as an
+`AddOpenApiRules` source, and `Internal/UseCaseValidationOperationTransformer` a `400`
+(`UseCaseOpenApiOptions`) on operations whose handler method takes a use case handler whose use
+case `IUseCaseCatalog` says can fail validation (matched against `UseCaseDescriptor.HandlerType`,
+no `GetInterfaces`, so it stays trimming-safe). It was a proof of concept in the Hlibz.UseCases
+repository first. Its tests (`tests/Hlibz.OpenApi.UseCases.Tests`) reference Hlibz.UseCases
+directly, so its generator registers their use cases. While Hlibz.UseCases is a prerelease the
+whole repo is released as one (NU5104: a stable package can't depend on a prerelease).
 
 `Internal/ParameterSchemas` answers "which type does this parameter schema stand for": ASP.NET
 Core passes the parameter's `ParameterDescription` to *every* schema under it (an array's item
@@ -110,7 +130,8 @@ dotnet run --project samples/Atlas.Api    # :5290/api-docs, try Atlas.Api.http
 
 StyleCop + Sonar + `AnalysisMode=All`, warnings as errors; every public member has XML docs
 (CS1591 on for `src`). Explicit types, no `var`. Transformers are internal, in `Internal/`; the
-public surface is the `Add...` extensions, their options classes, `IOpenApiRule`, `RuleText`,
+public surface is the `Add...` extensions, their options classes (`OpenApiRuleOptions`,
+`UseCaseOpenApiOptions`, ...), `IOpenApiRule`, `RuleText`,
 `OpenApiRuleAttribute` and `OpenApiDocumentDefinition`. Tests: xUnit v3 on Microsoft Testing
 Platform, named `Subject_WithCondition_ExpectedOutcome`, asserting on the served JSON document.
 

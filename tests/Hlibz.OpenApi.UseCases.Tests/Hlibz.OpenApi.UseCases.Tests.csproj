@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+        On, so AddXmlDocumentation() has summaries to read. The summaries on test models are test
+        data, so StyleCop's documentation, ordering and file name rules are off.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;SA1201;SA1202;SA1204;SA1611;SA1615;SA1649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <!-- Direct, as in an app: its XML comment generator is an analyzer, which doesn't flow transitively. -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- Direct, as in an app: its handler generator runs on this project's use cases. -->
+    <PackageReference Include="Hlibz.UseCases" />
+    <PackageReference Include="Hlibz.Results.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hlibz.OpenApi.UseCases\Hlibz.OpenApi.UseCases.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.ComponentModel.DataAnnotations" />
+    <Using Include="Hlibz.Results" />
+    <Using Include="Hlibz.UseCases" />
+  </ItemGroup>
+
+</Project>

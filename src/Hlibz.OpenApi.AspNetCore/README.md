@@ -17,7 +17,7 @@ using Hlibz.OpenApi;
 
 builder.Services.AddOpenApi("v1", options => options
     .AddXmlDocumentation()    // <summary>s as descriptions (enum values too), internal types and packages included
-    .AddOpenApiRules()        // custom validation attributes describe themselves (IOpenApiRule)
+    .AddOpenApiRules()        // custom validation attributes describe themselves (IOpenApiRule), record parameters too
     .AddStronglyTypedIds()    // CountryId(Guid Value) → { "type": "string", "format": "uuid" }
     .AddValidationProblems()  // the 400 AddValidation() answers with, where it can
     .AddBearerSecurity()      // a lock on exactly the endpoints that require authorization
@@ -48,5 +48,7 @@ Trimming- and AOT-compatible. The document is built again on every request, so c
   sample is built on it.
 - [Hlibz.Results.AspNetCore](https://www.nuget.org/packages/Hlibz.Results.AspNetCore): one
   error body for minimal APIs and controllers.
+- [Hlibz.OpenApi.UseCases](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases): publishes
+  [Hlibz.UseCases](https://www.nuget.org/packages/Hlibz.UseCases)' rules and validation `400`s.
 
 Full documentation and a sample: [github.com/hlib-zinchenko/Hlibz.OpenApi](https://github.com/hlib-zinchenko/Hlibz.OpenApi).

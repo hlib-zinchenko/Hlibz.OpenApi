@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Label="NuGet metadata">
+    <PackageId>Hlibz.OpenApi.UseCases</PackageId>
+    <Description>Publishes Hlibz.UseCases in OpenAPI documents built with Microsoft.AspNetCore.OpenApi: the rules use cases describe (IDescribedRule, [RuleSummary]) as schema keywords and text, DataAnnotations on record constructor parameters, and the 400 of the operations whose use case can fail validation.</Description>
+    <PackageTags>openapi;aspnetcore;minimal-api;use-cases;validation;data-annotations</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Hlibz.UseCases" />
+  </ItemGroup>
+
+  <!-- Packed as a dependency on the same version: every package here is released together. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Hlibz.OpenApi.AspNetCore\Hlibz.OpenApi.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <!--
+    Microsoft.AspNetCore.OpenApi's XML comment generator reaches this project through
+    Hlibz.OpenApi.AspNetCore and would compile this library's own doc comments into it, so it is
+    taken off the compiler's analyzers, as Hlibz.OpenApi.AspNetCore does.
+  -->
+  <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Hlibz.OpenApi.UseCases.Tests" />
+  </ItemGroup>
+
+</Project>
