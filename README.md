@@ -351,6 +351,30 @@ The returned list can feed a document picker, such as the one in
 app.MapReDocDocuments([.. documents.Select(document => new ReDocDocument(document.Name, document.Title))]);
 ```
 
+## Documents at build time
+
+Clients needn't wait for a running API to get the documents: ASP.NET Core's
+`Microsoft.Extensions.ApiDescription.Server` writes them on every build, transformers and all.
+Reference the version of your target framework's ASP.NET Core (its tool only runs apps of that
+major) and set where they go:
+
+```xml
+<PropertyGroup>
+  <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/openapi</OpenApiDocumentsDirectory>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="11.0.0" PrivateAssets="all" />
+</ItemGroup>
+```
+
+- Each document becomes `{Assembly}_{name}.json`; the sample's are the same JSON its
+  `/openapi/{name}.json` serves, `AddOpenApiDocuments` and `AddXmlDocumentation()` included.
+- It runs the app's `Main` until `builder.Build()`, then stops it: code before `Build()` runs
+  (keep it free of what only exists in production, such as secrets), no server starts.
+- Only a project with one target framework writes them on build.
+- Committing them makes an API change show in review, and CI can fail on stale ones with
+  `git diff --exit-code` after the build, as this repository does for the sample.
+
 ## Performance and AOT
 
 - **Cache the document.** Microsoft.AspNetCore.OpenApi builds the document again on every

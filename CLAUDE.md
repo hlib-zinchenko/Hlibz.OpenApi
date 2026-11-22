@@ -64,7 +64,10 @@ schema too), and describes a `TryParse`-bound parameter as `string`. Use it rath
   those for API readers and keep notes in `<remarks>`) and Hlibz.Redoc.AspNetCore,
   net11.0 only, never packed. `samples/README.md` maps each feature to where it shows; keep it,
   `Atlas.Api.http` and the sample in step with the API. Run it with
-  `dotnet run --project samples/Atlas.Api` (port 5290, `/api-docs`).
+  `dotnet run --project samples/Atlas.Api` (port 5290, `/api-docs`). Its build writes both
+  documents to `samples/Atlas.Api/openapi` (Microsoft.Extensions.ApiDescription.Server, whose
+  version must match the target framework's major): committed, and CI fails when a build
+  changes them, so build before committing a change that alters the documents.
 
 The ASP.NET Core metadata keys (`x-schema-id`, `x-ref-description`, `x-is-nullable-property`) are
 internal to Microsoft.AspNetCore.OpenApi and verified by the tests on both target frameworks;

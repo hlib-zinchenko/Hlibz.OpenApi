@@ -25,5 +25,10 @@
     <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
         <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
         <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
+        <!--
+            Sample-only: writes the documents at build time. Its tool only runs apps of its own
+            major (10.x ships a net10.0 tool, 11.x a net11.0 one), hence per target framework.
+        -->
+        <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="11.0.0" />
     </ItemGroup>
 </Project>

@@ -1,5 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <!--
+    Every build writes both documents here (Atlas.Api_locations.json,
+    Atlas.Api_locations-admin.json), the same JSON /openapi/{name}.json serves, for clients that
+    shouldn't wait for a running API. Committed, and CI fails when they're stale.
+  -->
+  <PropertyGroup>
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/openapi</OpenApiDocumentsDirectory>
+  </PropertyGroup>
+
   <ItemGroup>
     <!--
       Direct, as every app needs it: Microsoft.AspNetCore.OpenApi's XML comment generator is an
@@ -8,6 +17,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Hlibz.MinimalApi.Endpoints" />
     <PackageReference Include="Hlibz.Redoc.AspNetCore" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

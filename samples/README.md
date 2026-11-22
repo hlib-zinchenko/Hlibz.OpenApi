@@ -33,5 +33,10 @@ requests in the `.http` file get the `400`s the documents describe, as
 (`DemoAuthenticationHandler`) that accepts the credentials the documents name:
 `Authorization: Bearer demo-user` or `Bearer demo-admin`, and `X-Api-Key: demo-admin-key`.
 
-The sample targets net11.0 only, references the library project and gets the other two packages
+Every build also writes both documents to [`Atlas.Api/openapi`](Atlas.Api/openapi)
+(`Microsoft.Extensions.ApiDescription.Server` and `OpenApiDocumentsDirectory` in
+`Atlas.Api.csproj`), so a client gets them without running the API. They're committed, and CI
+fails when a build changes them: keep them in step by building before you commit.
+
+The sample targets net11.0 only, references the library project and gets the other packages
 from NuGet. It is never packed.

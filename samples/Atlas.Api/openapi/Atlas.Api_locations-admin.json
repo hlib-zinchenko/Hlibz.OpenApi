@@ -1,0 +1,500 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Atlas (Admin)",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/admin/cities": {
+      "post": {
+        "tags": [
+          "Atlas admin"
+        ],
+        "summary": "Adds a city.",
+        "description": "Adds a city to an existing country; an unknown country is a `404`.",
+        "operationId": "CreateCity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request didn't pass validation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "ApiKey": [ ]
+          }
+        ]
+      }
+    },
+    "/api/admin/countries": {
+      "post": {
+        "tags": [
+          "Atlas admin"
+        ],
+        "summary": "Adds a country.",
+        "description": "Adds a country to the atlas and returns it, with its new id.",
+        "operationId": "CreateCountry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCountryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request didn't pass validation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "ApiKey": [ ]
+          }
+        ]
+      }
+    },
+    "/api/admin/status": {
+      "get": {
+        "tags": [
+          "Atlas admin"
+        ],
+        "summary": "Gets the admin API's status.",
+        "description": "Gets how many countries, cities and pending suggestions the atlas holds. Open to everyone, as a health check.",
+        "operationId": "GetAdminStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdminStatusDto": {
+        "required": [
+          "countries",
+          "cities",
+          "pendingSuggestions"
+        ],
+        "type": "object",
+        "properties": {
+          "countries": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The number of countries in the atlas.",
+            "format": "int32"
+          },
+          "cities": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The number of cities in the atlas.",
+            "format": "int32"
+          },
+          "pendingSuggestions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The number of city suggestions waiting for review.",
+            "format": "int32"
+          }
+        },
+        "description": "Whether the admin API is up. Open to everyone, unlike the rest of the admin API."
+      },
+      "CityDto": {
+        "required": [
+          "id",
+          "countryId",
+          "name",
+          "population",
+          "isCapital"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The city's id.",
+            "format": "int32"
+          },
+          "countryId": {
+            "type": "string",
+            "description": "The id of the country the city is in.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "The city's English name."
+          },
+          "population": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "The city's population, if known.",
+            "format": "int32"
+          },
+          "isCapital": {
+            "type": "boolean",
+            "description": "Whether the city is its country's capital."
+          }
+        },
+        "description": "A city."
+      },
+      "Continent": {
+        "enum": [
+          "Africa",
+          "Antarctica",
+          "Asia",
+          "Europe",
+          "NorthAmerica",
+          "Oceania",
+          "SouthAmerica"
+        ],
+        "description": "A continent.",
+        "x-enumDescriptions": {
+          "Africa": "Africa.",
+          "Antarctica": "Antarctica, which no country lies on.",
+          "Asia": "Asia, including the Middle East.",
+          "Europe": "Europe.",
+          "NorthAmerica": "North America, including Central America and the Caribbean.",
+          "Oceania": "Australia, New Zealand and the Pacific islands.",
+          "SouthAmerica": "South America."
+        }
+      },
+      "CountryDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "continent"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The country's id.",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "description": "The country's ISO 3166-1 alpha-2 code."
+          },
+          "name": {
+            "type": "string",
+            "description": "The country's English name."
+          },
+          "continent": {
+            "description": "The continent the country lies on.",
+            "$ref": "#/components/schemas/Continent"
+          }
+        },
+        "description": "A country, as listed to everyone."
+      },
+      "CreateCityRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "countryId": {
+            "type": "string",
+            "not": {
+              "const": "00000000-0000-0000-0000-000000000000"
+            },
+            "description": "The country the city is in.\n\nMust not be the empty id.",
+            "format": "uuid",
+            "x-rules": [
+              "Must not be the empty id."
+            ]
+          },
+          "name": {
+            "maxLength": 100,
+            "type": "string",
+            "description": "The city's English name."
+          },
+          "population": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "The city's population, if known.",
+            "format": "int32"
+          },
+          "isCapital": {
+            "type": "boolean",
+            "description": "Whether the city is its country's capital."
+          }
+        },
+        "description": "Adds a city to a country."
+      },
+      "CreateCountryRequest": {
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "pattern": "^[A-Z]{2}$",
+            "type": "string",
+            "description": "The country's ISO 3166-1 alpha-2 code.\n\nAn ISO 3166-1 alpha-2 code: two capital letters, such as `UA`.",
+            "x-rules": [
+              "An ISO 3166-1 alpha-2 code: two capital letters, such as `UA`."
+            ]
+          },
+          "name": {
+            "maxLength": 100,
+            "type": "string",
+            "description": "The country's English name."
+          },
+          "continent": {
+            "description": "The continent the country lies on.\n\nAntarctica has no countries.",
+            "$ref": "#/components/schemas/Continent"
+          },
+          "borders": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The codes of the countries it borders.\n\nNo item may appear twice.",
+            "x-rules": [
+              "No item may appear twice."
+            ]
+          }
+        },
+        "description": "Adds a country to the atlas."
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "A demo token: `demo-user` for any signed-in endpoint, `demo-admin` for the admin API.",
+        "scheme": "bearer"
+      },
+      "ApiKey": {
+        "type": "apiKey",
+        "description": "`demo-admin-key`, for scripts that can't hold a token.",
+        "name": "X-Api-Key",
+        "in": "header"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Atlas admin"
+    }
+  ]
+}

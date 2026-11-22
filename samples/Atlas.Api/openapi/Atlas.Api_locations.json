@@ -1,0 +1,526 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Atlas",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/cities/{id}": {
+      "get": {
+        "tags": [
+          "Cities"
+        ],
+        "summary": "Gets one city by its id.",
+        "description": "Gets one city by its id; an unknown id is a `404`.",
+        "operationId": "GetCity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cities": {
+      "get": {
+        "tags": [
+          "Cities"
+        ],
+        "summary": "Gets the cities matching every filter.",
+        "description": "Gets the cities matching every filter given, in the order they were added.\n\n`minPopulation` must not be greater than `maxPopulation`.",
+        "operationId": "SearchCities",
+        "parameters": [
+          {
+            "name": "countryId",
+            "in": "query",
+            "description": "The country to list the cities of.",
+            "schema": {
+              "type": [
+                "null",
+                "string"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "countryIds",
+            "in": "query",
+            "description": "The countries to list the cities of, instead of one country.\n\nNo item may appear twice.",
+            "schema": {
+              "uniqueItems": true,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "x-rules": [
+                "No item may appear twice."
+              ]
+            }
+          },
+          {
+            "name": "minPopulation",
+            "in": "query",
+            "description": "The smallest population to include.",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 0,
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "maxPopulation",
+            "in": "query",
+            "description": "The largest population to include.",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 0,
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "codes",
+            "in": "query",
+            "description": "The country codes to list the cities of, instead of one country.\n\nNo item may appear twice.",
+            "schema": {
+              "uniqueItems": true,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "x-rules": [
+                "No item may appear twice."
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CityDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request didn't pass validation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cities/suggestions": {
+      "post": {
+        "tags": [
+          "Cities"
+        ],
+        "summary": "Suggests a missing city.",
+        "description": "Suggests a city the atlas is missing, for an admin to review. Needs a signed-in user.",
+        "operationId": "SuggestCity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestCityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request didn't pass validation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/countries": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Gets every country.",
+        "description": "Gets every country in the atlas, sorted by name.",
+        "operationId": "GetCountries",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/countries/{id}": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Gets one country by its id.",
+        "description": "Gets one country by its id; an unknown id is a `404`.",
+        "operationId": "GetCountry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CityDto": {
+        "required": [
+          "id",
+          "countryId",
+          "name",
+          "population",
+          "isCapital"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The city's id.",
+            "format": "int32"
+          },
+          "countryId": {
+            "type": "string",
+            "description": "The id of the country the city is in.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "The city's English name."
+          },
+          "population": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "The city's population, if known.",
+            "format": "int32"
+          },
+          "isCapital": {
+            "type": "boolean",
+            "description": "Whether the city is its country's capital."
+          }
+        },
+        "description": "A city."
+      },
+      "Continent": {
+        "enum": [
+          "Africa",
+          "Antarctica",
+          "Asia",
+          "Europe",
+          "NorthAmerica",
+          "Oceania",
+          "SouthAmerica"
+        ],
+        "description": "A continent.",
+        "x-enumDescriptions": {
+          "Africa": "Africa.",
+          "Antarctica": "Antarctica, which no country lies on.",
+          "Asia": "Asia, including the Middle East.",
+          "Europe": "Europe.",
+          "NorthAmerica": "North America, including Central America and the Caribbean.",
+          "Oceania": "Australia, New Zealand and the Pacific islands.",
+          "SouthAmerica": "South America."
+        }
+      },
+      "CountryDto": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "continent"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The country's id.",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "description": "The country's ISO 3166-1 alpha-2 code."
+          },
+          "name": {
+            "type": "string",
+            "description": "The country's English name."
+          },
+          "continent": {
+            "description": "The continent the country lies on.",
+            "$ref": "#/components/schemas/Continent"
+          }
+        },
+        "description": "A country, as listed to everyone."
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SuggestCityRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "countryId": {
+            "type": "string",
+            "not": {
+              "const": "00000000-0000-0000-0000-000000000000"
+            },
+            "description": "The country the city is in.\n\nMust not be the empty id.",
+            "format": "uuid",
+            "x-rules": [
+              "Must not be the empty id."
+            ]
+          },
+          "name": {
+            "maxLength": 100,
+            "type": "string",
+            "description": "The city's English name."
+          },
+          "source": {
+            "maxLength": 500,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Where the suggestion comes from, such as a link."
+          }
+        },
+        "description": "Suggests a city the atlas is missing, for an admin to review."
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "A demo token: `demo-user` for any signed-in endpoint, `demo-admin` for the admin API.",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Cities"
+    },
+    {
+      "name": "Countries"
+    }
+  ]
+}

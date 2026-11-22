@@ -35,6 +35,12 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release
 
+      # The sample's documents are committed build output: the build must not change them.
+      - name: Sample documents are current
+        run: |
+          git status --porcelain -- samples
+          test -z "$(git status --porcelain -- samples)"
+
       - name: Pack
         run: dotnet pack --no-build --configuration Release --output ./artifacts
 
