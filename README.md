@@ -6,7 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/hlib-zinchenko/Hlibz.OpenApi/blob/main/LICENSE)<br>
 [![Hlibz.OpenApi.AspNetCore](https://img.shields.io/nuget/v/Hlibz.OpenApi.AspNetCore?label=Hlibz.OpenApi.AspNetCore)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)
 [![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.AspNetCore?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)<br>
-[![Hlibz.OpenApi.UseCases](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.UseCases?label=Hlibz.OpenApi.UseCases)](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases)
+[![Hlibz.OpenApi.UseCases](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.UseCases?label=Hlibz.OpenApi.UseCases)](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases)<br>
+[![Hlibz.OpenApi.Paging](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.Paging?label=Hlibz.OpenApi.Paging)](https://www.nuget.org/packages/Hlibz.OpenApi.Paging)
 
 Transformers for [Microsoft.AspNetCore.OpenApi](https://learn.microsoft.com/aspnet/core/fundamentals/openapi/overview)
 (`AddOpenApi()` / `MapOpenApi()`) that fill the gaps between what your API checks and what its
@@ -22,6 +23,7 @@ OpenAPI document says.
 | [Description cleanup](#description-cleanup) | `AddDescriptionCleanup()` | "Gets or sets the name." reads "The name.". |
 | [Several documents](#several-documents) | `services.AddOpenApiDocuments(...)` | One document per endpoint group, configured once. |
 | [Use cases](#use-cases) | `AddUseCases()` | [Hlibz.UseCases](https://github.com/hlib-zinchenko/Hlibz.UseCases)' rules and validation `400`s. A package of its own: `Hlibz.OpenApi.UseCases`. |
+| [Paging](#paging) | `AddPaging()` | [Hlibz.Paging](https://github.com/hlib-zinchenko/Hlibz.Paging)'s `[SortableBy]`: what a sort string sorts by and its default. A package of its own: `Hlibz.OpenApi.Paging`. |
 
 Targets .NET 10 and 11.
 
@@ -406,6 +408,41 @@ app.MapPost("cities", async (CreateCityCommand command, ICreateCityCommandHandle
 
 It's released with Hlibz.OpenApi.AspNetCore, and as a preview while Hlibz.UseCases is one.
 
+## Paging
+
+`Hlibz.OpenApi.Paging` describes the sort strings [Hlibz.Paging](https://github.com/hlib-zinchenko/Hlibz.Paging)'s
+`[SortableBy]` checks.
+
+```bash
+dotnet add package Hlibz.OpenApi.Paging --prerelease
+```
+
+```csharp
+public sealed class OrdersQuery
+{
+    [FromQuery(Name = "sort")]
+    [SortableBy(typeof(OrderDto), NamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+    public string? Sort { get; init; }
+}
+
+builder.Services.AddOpenApi("v1", options => options.AddPaging());
+```
+
+```text
+Sort by: id, customer_name, created_at. Comma-separated, each optionally followed by :asc
+(the default) or :desc. Default: created_at:desc.
+```
+
+- **The sentence** goes in the `description` and `x-rules` of the property, record parameter or
+  parameter `[SortableBy]` sits on, and into a query parameter's own description. `AddPaging()`
+  turns on [`AddOpenApiRules()`](#self-describing-validation-rules) with `[SortableBy]` as a
+  source, so it is written exactly as an `IOpenApiRule` is.
+- **The default order** (`created_at:desc`) is the schema's `default`.
+- **Names** follow the attribute's `NamingPolicy`, as its validation errors do.
+
+Hlibz.Paging has no OpenAPI dependency: the attribute only validates, and this package reads it.
+It's released with Hlibz.OpenApi.AspNetCore, as a preview while the repository's releases are.
+
 ## Documents at build time
 
 Clients needn't wait for a running API to get the documents: ASP.NET Core's
@@ -474,7 +511,7 @@ dotnet run --project samples/Atlas.Api   # then open http://localhost:5290/api-d
 - [Hlibz.Results.AspNetCore](https://www.nuget.org/packages/Hlibz.Results.AspNetCore): one error
   body for minimal APIs and controllers.
 - [Hlibz.Paging](https://www.nuget.org/packages/Hlibz.Paging): paging and sorting for list
-  endpoints.
+  endpoints, described by `Hlibz.OpenApi.Paging`.
 - [Hlibz.UseCases](https://www.nuget.org/packages/Hlibz.UseCases): use cases with generated
   pipelines and DataAnnotations validation, published by `Hlibz.OpenApi.UseCases`.
 

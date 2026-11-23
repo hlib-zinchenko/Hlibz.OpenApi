@@ -4,9 +4,9 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-Two NuGet packages, released together under one version: `src/Hlibz.OpenApi.AspNetCore`,
-transformers for Microsoft.AspNetCore.OpenApi, and `src/Hlibz.OpenApi.UseCases`, which publishes
-Hlibz.UseCases (below). The repo is named after the package family; a later
+Three NuGet packages, released together under one version: `src/Hlibz.OpenApi.AspNetCore`,
+transformers for Microsoft.AspNetCore.OpenApi, `src/Hlibz.OpenApi.UseCases`, which publishes
+Hlibz.UseCases, and `src/Hlibz.OpenApi.Paging`, which publishes Hlibz.Paging (both below). The repo is named after the package family; a later
 `Hlibz.OpenApi.Swashbuckle` (filters) or a dependency-free `Hlibz.OpenApi.Rules`
 (`IOpenApiRule` + `RuleText`) would sit next to them. `OPENAPI_PACKAGE_FINDINGS.md` records why the
 package looks the way it does (what was ported from Lighthouse, what was dropped and why).
@@ -72,6 +72,15 @@ no `GetInterfaces`, so it stays trimming-safe). It was a proof of concept in the
 repository first. Its tests (`tests/Hlibz.OpenApi.UseCases.Tests`) reference Hlibz.UseCases
 directly, so its generator registers their use cases. While Hlibz.UseCases is a prerelease the
 whole repo is released as one (NU5104: a stable package can't depend on a prerelease).
+
+`Hlibz.OpenApi.Paging` (namespace `Hlibz.OpenApi`, depends on Hlibz.Paging, a minimum, and on
+Hlibz.OpenApi.AspNetCore at the same version): `AddPaging()` adds `Internal/SortableByRules`
+(each `[SortableBy]` as an `IOpenApiRule`: the sortable properties, format and default order as
+rule text, the default order as the schema's `default`, names through the attribute's
+`ConvertName`) as an `AddOpenApiRules` source. Hlibz.Paging's attribute is a plain
+`ValidationAttribute` on purpose, so Paging depends on no documentation contract; this package is
+where it meets OpenAPI. Its tests (`tests/Hlibz.OpenApi.Paging.Tests`) reference Hlibz.Paging
+directly, so its generator sees their DTOs.
 
 `Internal/ParameterSchemas` answers "which type does this parameter schema stand for": ASP.NET
 Core passes the parameter's `ParameterDescription` to *every* schema under it (an array's item

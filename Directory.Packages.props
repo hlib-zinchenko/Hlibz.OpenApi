@@ -5,6 +5,8 @@
     <ItemGroup>
         <!-- Hlibz.OpenApi.UseCases: the use cases it publishes. A minimum, packed as ">=". -->
         <PackageVersion Include="Hlibz.UseCases" Version="1.0.0-preview.1" />
+        <!-- Hlibz.OpenApi.Paging: the attribute it describes. A minimum, packed as ">=". -->
+        <PackageVersion Include="Hlibz.Paging" Version="1.1.0-preview.1" />
         <!-- Hlibz.OpenApi.UseCases' tests: the 400 body apps answer use case failures with. -->
         <PackageVersion Include="Hlibz.Results.AspNetCore" Version="2.2.0" />
         <!-- Sample-only: the endpoint and ReDoc packages the sample app is built with. -->

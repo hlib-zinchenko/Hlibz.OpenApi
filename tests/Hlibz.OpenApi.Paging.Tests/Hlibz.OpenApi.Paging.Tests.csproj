@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The test models are test data, so StyleCop's documentation and file name rules are off. -->
+    <NoWarn>$(NoWarn);CS1591;SA1201;SA1202;SA1204;SA1611;SA1615;SA1649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <!-- Direct, as in an app: its XML comment generator is an analyzer, which doesn't flow transitively. -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- Direct, as in an app: its [Sortable] generator runs on this project's DTOs. -->
+    <PackageReference Include="Hlibz.Paging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hlibz.OpenApi.Paging\Hlibz.OpenApi.Paging.csproj" />
+  </ItemGroup>
+
+</Project>
