@@ -70,8 +70,9 @@ on Hlibz.OpenApi.AspNetCore at the same version): `AddUseCases(configure?)` adds
 case `IUseCaseCatalog` says can fail validation (matched against `UseCaseDescriptor.HandlerType`,
 no `GetInterfaces`, so it stays trimming-safe). It was a proof of concept in the Hlibz.UseCases
 repository first. Its tests (`tests/Hlibz.OpenApi.UseCases.Tests`) reference Hlibz.UseCases
-directly, so its generator registers their use cases. While Hlibz.UseCases is a prerelease the
-whole repo is released as one (NU5104: a stable package can't depend on a prerelease).
+directly, so its generator registers their use cases. All three packages release
+together, so a prerelease of Hlibz.UseCases or Hlibz.Paging makes the whole repo one (NU5104: a
+stable package can't depend on a prerelease).
 
 `Hlibz.OpenApi.Paging` (namespace `Hlibz.OpenApi`, depends on Hlibz.Paging, a minimum, and on
 Hlibz.OpenApi.AspNetCore at the same version): `AddPaging()` adds `Internal/SortableByRules`

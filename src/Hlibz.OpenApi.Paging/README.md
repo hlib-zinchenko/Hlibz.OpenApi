@@ -10,7 +10,7 @@ built with Microsoft.AspNetCore.OpenApi, for .NET 10 and 11: a sort string's sor
 properties, format and default order.
 
 ```bash
-dotnet add package Hlibz.OpenApi.Paging --prerelease
+dotnet add package Hlibz.OpenApi.Paging
 ```
 
 ```csharp

@@ -10,7 +10,7 @@ built with Microsoft.AspNetCore.OpenApi, for .NET 10 and 11: what each use case 
 `400` an invalid one is answered with.
 
 ```bash
-dotnet add package Hlibz.OpenApi.UseCases --prerelease
+dotnet add package Hlibz.OpenApi.UseCases
 ```
 
 ```csharp

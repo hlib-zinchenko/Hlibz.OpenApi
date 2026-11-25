@@ -379,7 +379,7 @@ app.MapReDocDocuments([.. documents.Select(document => new ReDocDocument(documen
 use cases check: their rules, and the `400` an invalid one is answered with.
 
 ```bash
-dotnet add package Hlibz.OpenApi.UseCases --prerelease
+dotnet add package Hlibz.OpenApi.UseCases
 ```
 
 ```csharp
@@ -406,7 +406,7 @@ app.MapPost("cities", async (CreateCityCommand command, ICreateCityCommandHandle
   endpoint binds: bind the use case itself (as the body, or with `[AsParameters]`), or give it a
   record that is also the body (`UpdateCityCommand(int Id, CityChanges Changes)`).
 
-It's released with Hlibz.OpenApi.AspNetCore, and as a preview while Hlibz.UseCases is one.
+It's released with Hlibz.OpenApi.AspNetCore, at the same version.
 
 ## Paging
 
@@ -414,7 +414,7 @@ It's released with Hlibz.OpenApi.AspNetCore, and as a preview while Hlibz.UseCas
 `[SortableBy]` checks.
 
 ```bash
-dotnet add package Hlibz.OpenApi.Paging --prerelease
+dotnet add package Hlibz.OpenApi.Paging
 ```
 
 ```csharp
@@ -441,7 +441,7 @@ Sort by: id, customer_name, created_at. Comma-separated, each optionally followe
 - **Names** follow the attribute's `NamingPolicy`, as its validation errors do.
 
 Hlibz.Paging has no OpenAPI dependency: the attribute only validates, and this package reads it.
-It's released with Hlibz.OpenApi.AspNetCore, as a preview while the repository's releases are.
+It's released with Hlibz.OpenApi.AspNetCore, at the same version.
 
 ## Documents at build time
 
