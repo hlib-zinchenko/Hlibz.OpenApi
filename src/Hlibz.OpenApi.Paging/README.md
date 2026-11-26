@@ -6,7 +6,7 @@
 [![CI](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml/badge.svg)](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml)
 
 Publishes [Hlibz.Paging](https://www.nuget.org/packages/Hlibz.Paging) in OpenAPI documents
-built with Microsoft.AspNetCore.OpenApi, for .NET 10 and 11: a sort string's sortable
+built with Microsoft.AspNetCore.OpenApi, for .NET 11: a sort string's sortable
 properties, format and default order.
 
 ```bash

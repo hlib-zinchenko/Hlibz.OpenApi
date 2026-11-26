@@ -5,8 +5,8 @@
 [![NuGet](https://img.shields.io/nuget/v/Hlibz.OpenApi.AspNetCore.svg)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)
 [![CI](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml/badge.svg)](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml)
 
-Transformers for Microsoft.AspNetCore.OpenApi (`AddOpenApi()` / `MapOpenApi()`), for .NET 10
-and 11.
+Transformers for Microsoft.AspNetCore.OpenApi (`AddOpenApi()` / `MapOpenApi()`), for .NET 11
+(.NET 10: version 1.x).
 
 ```bash
 dotnet add package Hlibz.OpenApi.AspNetCore
@@ -44,10 +44,10 @@ Trimming- and AOT-compatible. The document is built again on every request, so c
 ## Related packages
 
 - [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints):
-  minimal API endpoints as classes, each class's `<summary>` its operation description. The
-  sample is built on it.
-- [Hlibz.Results.AspNetCore](https://www.nuget.org/packages/Hlibz.Results.AspNetCore): one
-  error body for minimal APIs and controllers.
+  minimal API endpoints as classes, each class's `<summary>` its operation description.
+- [Hlibz.OpenApi.Results](https://www.nuget.org/packages/Hlibz.OpenApi.Results): publishes
+  each error a [Hlibz.Results](https://www.nuget.org/packages/Hlibz.Results.AspNetCore)
+  endpoint declares, with its code and data.
 - [Hlibz.OpenApi.UseCases](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases): publishes
   [Hlibz.UseCases](https://www.nuget.org/packages/Hlibz.UseCases)' rules and validation `400`s.
 

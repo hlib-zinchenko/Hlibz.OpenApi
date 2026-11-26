@@ -41,6 +41,11 @@ internal sealed class AtlasStore
 
     public CityDto? FindCity(CityId id) => _cities.GetValueOrDefault(id);
 
+    public IReadOnlyList<CityDto> CitiesOf(CountryId countryId) =>
+        [.. Cities.Where(city => city.CountryId == countryId)];
+
+    public void RemoveCountry(CountryId id) => _countries.TryRemove(id, out _);
+
     public CountryDto AddCountry(string code, string name, Continent continent) =>
         Add(new CountryDto(CountryId.New(), code, name, continent));
 

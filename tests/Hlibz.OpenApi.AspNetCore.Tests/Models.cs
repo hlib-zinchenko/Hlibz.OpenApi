@@ -97,7 +97,8 @@ public sealed record City(
     CountryId? PreviousCountryId,
     OrderNumber Number,
     PlainWrapper Plain,
-    string Name);
+    string Name,
+    IReadOnlyList<CountryId>? Neighbours = null);
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotDefaultAttribute : ValidationAttribute, IOpenApiRule

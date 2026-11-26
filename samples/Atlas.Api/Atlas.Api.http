@@ -18,6 +18,12 @@ GET {{host}}/api/countries/00000000-0000-0000-0000-000000000001
 ### A CityId route parameter, documented as an int32
 GET {{host}}/api/cities/1
 
+### 404: CountryNotFound's own body (atlas_1001), the id in details
+GET {{host}}/api/countries/00000000-0000-0000-0000-000000000009
+
+### 404: CityNotFound (atlas_1002), details.cityId an int32
+GET {{host}}/api/cities/99
+
 ### [AsParameters] filters: arrays of IDs and codes, each with uniqueItems
 GET {{host}}/api/cities?codes=UA&codes=JP&minPopulation=1000000
 
@@ -71,6 +77,31 @@ Authorization: Bearer demo-admin
 Content-Type: application/json
 
 { "code": "PL", "name": "Poland", "continent": "Europe", "borders": ["UA", "DE"] }
+
+### 409: CityNameTaken (atlas_1003), one of the 409's oneOf, details.cityId the namesake (Lviv)
+POST {{host}}/api/admin/cities
+Authorization: Bearer demo-admin
+Content-Type: application/json
+
+{ "countryId": "00000000-0000-0000-0000-000000000001", "name": "lviv" }
+
+### 409: CapitalTaken (atlas_1004), the other one, details.capitalId Kyiv's id
+POST {{host}}/api/admin/cities
+Authorization: Bearer demo-admin
+Content-Type: application/json
+
+{ "countryId": "00000000-0000-0000-0000-000000000001", "name": "Odesa", "isCapital": true }
+
+### 201, with a Location (WithCreatedLocation)
+POST {{host}}/api/admin/cities
+Authorization: Bearer demo-admin
+Content-Type: application/json
+
+{ "countryId": "00000000-0000-0000-0000-000000000001", "name": "Odesa" }
+
+### 409: CountryHasCities (atlas_1005), details.cityIds the cities in the way
+DELETE {{host}}/api/admin/countries/00000000-0000-0000-0000-000000000001
+Authorization: Bearer demo-admin
 
 ### Anonymous, though the admin group requires the admin policy: AllowAnonymous(), no lock
 GET {{host}}/api/admin/status

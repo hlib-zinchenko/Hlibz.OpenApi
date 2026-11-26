@@ -161,25 +161,38 @@ internal sealed class StronglyTypedIdSchemaTransformer(Func<Type, Type?>? valueT
             : null;
 
     /// <summary>
-    /// Gives an array of IDs bound from the query string its item schema: ASP.NET Core describes
-    /// a <c>CountryId[]</c> parameter as <c>{ "type": "array" }</c> with no items at all, so there
-    /// is no item schema to transform.
+    /// Gives an array of IDs its item schema: ASP.NET Core describes a <c>CountryId[]</c> query
+    /// parameter, and a list of IDs in a body whose ID has a JSON converter, as
+    /// <c>{ "type": "array" }</c> with no items at all, so there is no item schema to transform.
     /// </summary>
     private async Task DescribeItemsAsync(
         OpenApiSchema schema,
         OpenApiSchemaTransformerContext context,
         CancellationToken cancellationToken)
     {
-        if (schema.Items is not null
-            || ParameterSchemas.OwnType(context) is not { } parameterType
-            || ParameterSchemas.ElementType(parameterType) is not { } element)
+        if (schema.Items is not null)
+        {
+            return;
+        }
+
+        bool isParameter = true;
+        Type? element = ParameterSchemas.OwnType(context) is { } parameterType
+            ? ParameterSchemas.ElementType(parameterType)
+            : null;
+        if (element is null && context.JsonTypeInfo.Kind == JsonTypeInfoKind.Enumerable)
+        {
+            isParameter = false;
+            element = context.JsonTypeInfo.ElementType;
+        }
+
+        if (element is null)
         {
             return;
         }
 
         Type item = Nullable.GetUnderlyingType(element) ?? element;
         Type? valueType = valueTypeOf is null
-            ? DefaultValueTypeOf(item, isParameter: true, context.JsonTypeInfo.Options)
+            ? DefaultValueTypeOf(item, isParameter, context.JsonTypeInfo.Options)
             : valueTypeOf(item);
         if (valueType is null)
         {

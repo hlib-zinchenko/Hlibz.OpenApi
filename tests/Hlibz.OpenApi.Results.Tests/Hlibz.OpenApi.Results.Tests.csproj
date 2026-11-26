@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The test errors are test data, so StyleCop's documentation and file name rules are off. -->
+    <NoWarn>$(NoWarn);CS1591;SA1402;SA1649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <!-- Direct, as in an app: its XML comment generator is an analyzer, which doesn't flow transitively. -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Hlibz.Results.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hlibz.OpenApi.Results\Hlibz.OpenApi.Results.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Hlibz.Results" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Label="NuGet metadata">
+    <PackageId>Hlibz.OpenApi.Results</PackageId>
+    <Description>Publishes Hlibz.Results' typed errors in OpenAPI documents built with Microsoft.AspNetCore.OpenApi: every error an endpoint's Result&lt;T, TError&gt; declares, as its own body schema with its code and the schema of its details, one of them per status code, told apart by code.</Description>
+    <PackageTags>openapi;aspnetcore;minimal-api;results;errors;error-codes</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Hlibz.Results.AspNetCore" />
+  </ItemGroup>
+
+  <!-- Packed as a dependency on the same version: every package here is released together. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Hlibz.OpenApi.AspNetCore\Hlibz.OpenApi.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <!--
+    Microsoft.AspNetCore.OpenApi's XML comment generator reaches this project through
+    Hlibz.OpenApi.AspNetCore and would compile this library's own doc comments into it, so it is
+    taken off the compiler's analyzers, as Hlibz.OpenApi.AspNetCore does.
+  -->
+  <Target Name="RemoveOpenApiXmlCommentGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Hlibz.OpenApi.Results.Tests" />
+  </ItemGroup>
+
+</Project>

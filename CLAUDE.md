@@ -4,9 +4,10 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-Three NuGet packages, released together under one version: `src/Hlibz.OpenApi.AspNetCore`,
+Four NuGet packages, released together under one version: `src/Hlibz.OpenApi.AspNetCore`,
 transformers for Microsoft.AspNetCore.OpenApi, `src/Hlibz.OpenApi.UseCases`, which publishes
-Hlibz.UseCases, and `src/Hlibz.OpenApi.Paging`, which publishes Hlibz.Paging (both below). The repo is named after the package family; a later
+Hlibz.UseCases, `src/Hlibz.OpenApi.Paging`, which publishes Hlibz.Paging, and
+`src/Hlibz.OpenApi.Results`, which publishes Hlibz.Results' typed errors (all below). The repo is named after the package family; a later
 `Hlibz.OpenApi.Swashbuckle` (filters) or a dependency-free `Hlibz.OpenApi.Rules`
 (`IOpenApiRule` + `RuleText`) would sit next to them. `OPENAPI_PACKAGE_FINDINGS.md` records why the
 package looks the way it does (what was ported from Lighthouse, what was dropped and why).
@@ -29,7 +30,7 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
 - `AddXmlDocumentation()`: `Internal/XmlDocumentation` reads `<summary>`s (and a record's
   `<param>`s, for its positional properties) from the XML file next to each assembly at runtime,
   flattened to one line; ported from Lighthouse because Microsoft.AspNetCore.OpenApi's generator
-  skips `internal` types (on .NET 10; .NET 11's doesn't) and other assemblies, writes crefs with their member's type and keeps
+  skips other assemblies, writes crefs with their member's type and keeps
   line breaks. It *replaces* descriptions (the generator's), re-appending the rule text already
   there (`x-rules`, or the parked rules of a would-be `$ref`), so its order against
   `AddOpenApiRules()` doesn't matter; a property that will be a `$ref` gets its summary in
@@ -37,14 +38,15 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
   header parameter's schema. Enum values' summaries (`F:` members) go in `x-enumDescriptions`
   (`Internal/EnumValueDescriptions`), every value listed since ReDoc shows it in place of `enum`,
   keyed as the schema's `enum` lists them: JSON names, numbers, or declared names (a query
-  parameter binds with `Enum.TryParse`; .NET 11 inlines it with those, .NET 10 `$ref`s the
-  component). Package XML files reach `bin` and publish output only with
+  parameter binds with `Enum.TryParse`; .NET 11 inlines it with those). Package XML files reach `bin` and publish output only with
   `CopyDocumentationFilesFromPackages` (checked on the 11.0.100 SDK).
 - `AddStronglyTypedIds(configure?)`: rewrites ID schemas to the wrapped type's schema and
   inlines them (removes `x-schema-id`, `x-is-nullable-property`), applying any `x-ref-description`
   and parked rules, so the result doesn't depend on registration order. With
   `AsComponents = true` a would-be `$ref` keeps its metadata and stays a component (never
-  nullable itself: ASP.NET Core wraps nullable uses in `oneOf` with `null`).
+  nullable itself: ASP.NET Core wraps nullable uses in `oneOf` with `null`). An array of IDs
+  gets its `items` here (`DescribeItemsAsync`): ASP.NET Core writes none for a `CountryId[]`
+  query parameter or for a body list of IDs with a JSON converter.
 - `AddBearerSecurity()` / `AddSecurity(name, scheme)`: scheme on the document, requirement on
   operations where `RequiresAuthorization` (auth metadata or fallback policy, minus
   `IAllowAnonymous`). Same check as Hlibz.MinimalApi.Endpoints' internal one, copied on purpose:
@@ -52,12 +54,10 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
 - `AddValidationProblems(configure?)`: adds `400` (`HttpValidationProblemDetails`, a `$ref`) to
   operations `AddValidation()` can fail. ASP.NET Core's own test (`ValidationOptions` resolvers,
   no `IDisableValidationMetadata`, a non-service handler parameter
-  `TryGetValidatableParameterInfo` accepts; ASP0029-experimental on .NET 10) **and**
+  `TryGetValidatableParameterInfo` accepts) **and**
   `Internal/ValidationRules` (a `ValidationAttribute`/`IValidatableObject` somewhere inside it),
   since the generator registers rule-less record structs such as IDs. Content type follows
   `IProblemDetailsService` (problem+json) or not (plain JSON: tested). A declared `400` wins.
-  On .NET 10 a project may call `AddValidation()` only once (the generator fails on a second
-  call site), hence `TestApp.AddValidation`.
 - `AddDescriptionCleanup()`: a *document* transformer (runs last, after XML comments and `$ref`
   descriptions are in place); schemas and parameters only, never operation text.
 - `services.AddOpenApiDocuments(definitions, addOpenApi, configure)`: one document per group.
@@ -83,16 +83,36 @@ rule text, the default order as the schema's `default`, names through the attrib
 where it meets OpenAPI. Its tests (`tests/Hlibz.OpenApi.Paging.Tests`) reference Hlibz.Paging
 directly, so its generator sees their DTOs.
 
+`Hlibz.OpenApi.Results` (namespace `Hlibz.OpenApi`, depends on Hlibz.Results.AspNetCore 3.x, a
+minimum, and on Hlibz.OpenApi.AspNetCore at the same version): `AddResults()` adds
+`Internal/DeclaredErrorsOperationTransformer`, which reads the `DeclaredErrorsMetadata` that
+`WithResultResponses()`/`WithResultEnvelopes()` put on an endpoint returning
+`Result<T, TError>`. Per status code it replaces the body Hlibz.Results documented (only a `$ref`
+to `ErrorResponse`/`ResultEnvelope`: a response the endpoint declares itself wins) with each
+error's body component, `{ErrorSchemaId}{BodySchemaId}`: `allOf` of the body and an object
+narrowing `code` (an `enum` of one) and `details` (a `$ref` to the error's own schema, only when
+`ErrorDescriptor.HasDetails`), described by the error's message; several errors are a `oneOf`
+with a `discriminator` on `code`. Property names come from the body's schema (the app's naming
+policy). Ambient errors, custom envelopes and `EnvelopeAlwaysOk` are left alone. Its tests
+(`tests/Hlibz.OpenApi.Results.Tests`) reference Hlibz.Results.AspNetCore directly, so the
+Hlibz.Results generator sees their errors.
+
+Until the .NET 11 majors ship, `NuGet.config` adds the local folder feed `~/LocalNuGet`, where
+Hlibz.Results 3.0 previews are packed; Hlibz.OpenApi.UseCases stays on Hlibz.UseCases 1.x (built
+on Hlibz.Results 2.x, which its tests pin) until Hlibz.UseCases moves to Hlibz.Results 3.0.
+
 `Internal/ParameterSchemas` answers "which type does this parameter schema stand for": ASP.NET
 Core passes the parameter's `ParameterDescription` to *every* schema under it (an array's item
 schema too), and describes a `TryParse`-bound parameter as `string`. Use it rather than reading
 `ParameterDescription` directly.
 
-- `samples/Atlas.Api`: every feature on Hlibz.MinimalApi.Endpoints (NuGet `1.0.0`: each
-  endpoint's `Map(group)` makes one `MapGet`/`MapPost` call, a group's `Configure(group)` sets its
-  tags and policy, and an endpoint class's `<summary>` becomes its operation description, so write
-  those for API readers and keep notes in `<remarks>`) and Hlibz.Redoc.AspNetCore,
-  net11.0 only, never packed. `samples/README.md` maps each feature to where it shows; keep it,
+- `samples/Atlas.Api`: every feature of Hlibz.OpenApi.AspNetCore and Hlibz.OpenApi.Results on
+  plain minimal API endpoints (`Endpoints/`: one static class per group, handlers as `internal`
+  methods whose `<summary>`/`<remarks>` Microsoft.AspNetCore.OpenApi's generator writes as the
+  operation's summary/description, so write those for API readers and keep notes in `//`
+  comments; `WithName` gives the `operationId`), typed errors in `Domain/Errors.cs` and
+  `Domain/ErrorSets.cs`, and Hlibz.Redoc.AspNetCore, net11.0 only, never packed. No other Hlibz
+  packages: Hlibz.Stack is where they all meet. `samples/README.md` maps each feature to where it shows; keep it,
   `Atlas.Api.http` and the sample in step with the API. Run it with
   `dotnet run --project samples/Atlas.Api` (port 5290, `/api-docs`). Its build writes both
   documents to `samples/Atlas.Api/openapi` (Microsoft.Extensions.ApiDescription.Server, whose
@@ -100,8 +120,8 @@ schema too), and describes a `TryParse`-bound parameter as `string`. Use it rath
   changes them, so build before committing a change that alters the documents.
 
 The ASP.NET Core metadata keys (`x-schema-id`, `x-ref-description`, `x-is-nullable-property`) are
-internal to Microsoft.AspNetCore.OpenApi and verified by the tests on both target frameworks;
-recheck them when adding a target framework.
+internal to Microsoft.AspNetCore.OpenApi and verified by the tests; recheck them when moving to a
+new target framework.
 
 ## XML comment generator facts (tested)
 
@@ -111,6 +131,8 @@ These matter for operation descriptions from handler summaries, and for what
 - It only intercepts `AddOpenApi` calls compiled in the project that has the generator: never
   calls inside this package, hence `AddOpenApiDocuments`' `addOpenApi` callback.
 - `AddOpenApi(name, configure)` and lambdas are intercepted; `AddOpenApi(configureVariable)` is not.
+- It writes a handler *method*'s `<summary>` as the operation's summary and `<remarks>` as its
+  description, overriding `WithSummary`; it skips `private` methods and lambdas.
 - It's an analyzer in Microsoft.AspNetCore.OpenApi, and NuGet passes it on to an app that gets
   Microsoft.AspNetCore.OpenApi only through this package (despite `exclude="Analyzers"`), but not
   the package's `build/` targets that allow its interceptors: without
@@ -122,8 +144,7 @@ These matter for operation descriptions from handler summaries, and for what
 
 ## Requires
 
-* The .NET SDK `global.json` pins (11.0.100, patches roll forward; Dependabot bumps it), plus
-  the .NET 10 runtime to run both test targets. Pinned because warnings are errors and
+* The .NET SDK `global.json` pins (11.0.100, patches roll forward; Dependabot bumps it). Pinned because warnings are errors and
   `AnalysisMode=All`: a new SDK feature band brings new analyzer rules.
 
 ## Commands
@@ -131,7 +152,6 @@ These matter for operation descriptions from handler summaries, and for what
 ```bash
 dotnet build
 dotnet test
-dotnet test -f net11.0
 dotnet pack -c Release -o ./nupkg
 dotnet run --project samples/Atlas.Api    # :5290/api-docs, try Atlas.Api.http
 ```
@@ -145,13 +165,12 @@ public surface is the `Add...` extensions, their options classes (`OpenApiRuleOp
 `OpenApiRuleAttribute` and `OpenApiDocumentDefinition`. Tests: xUnit v3 on Microsoft Testing
 Platform, named `Subject_WithCondition_ExpectedOutcome`, asserting on the served JSON document.
 
-Targets net10.0 and net11.0 only: Microsoft.AspNetCore.OpenApi 10 uses Microsoft.OpenApi 2.x and
-11 uses 3.x (one source compiles against both; where they differ, such as
-`OpenApiMediaType` vs `IOpenApiMediaType`, write code that compiles for both rather than `#if`).
-.NET 9's 1.x object model is too different to support.
+Targets net11.0 only, from 2.0 (Microsoft.AspNetCore.OpenApi 11, on Microsoft.OpenApi 3.x;
+Hlibz.Results 3.0's C# 15 unions). 1.x targeted net10.0 and net11.0; .NET 10 apps stay there. Some
+code still compiles against both object models (`With<T>` helpers); no need to keep that up.
 
-Versions are central (`Directory.Packages.props`); Microsoft.AspNetCore.OpenApi is a minimum per
-target framework and Dependabot ignores it. Shared NuGet metadata and `Version` live in
+Versions are central (`Directory.Packages.props`); Microsoft.AspNetCore.OpenApi is a minimum and
+Dependabot ignores it. Shared NuGet metadata and `Version` live in
 `Directory.Build.props`; release by pushing a `vX.Y.Z` tag (see Releasing). The package has its own
 `src/<Package>/README.md` (packed, shown on nuget.org, absolute links only); the root `README.md`
 is the full documentation; keep them in step when an API changes.

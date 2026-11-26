@@ -7,7 +7,8 @@
 [![Hlibz.OpenApi.AspNetCore](https://img.shields.io/nuget/v/Hlibz.OpenApi.AspNetCore?label=Hlibz.OpenApi.AspNetCore)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)
 [![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.AspNetCore?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)<br>
 [![Hlibz.OpenApi.UseCases](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.UseCases?label=Hlibz.OpenApi.UseCases)](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases)<br>
-[![Hlibz.OpenApi.Paging](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.Paging?label=Hlibz.OpenApi.Paging)](https://www.nuget.org/packages/Hlibz.OpenApi.Paging)
+[![Hlibz.OpenApi.Paging](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.Paging?label=Hlibz.OpenApi.Paging)](https://www.nuget.org/packages/Hlibz.OpenApi.Paging)<br>
+[![Hlibz.OpenApi.Results](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.Results?label=Hlibz.OpenApi.Results)](https://www.nuget.org/packages/Hlibz.OpenApi.Results)
 
 Transformers for [Microsoft.AspNetCore.OpenApi](https://learn.microsoft.com/aspnet/core/fundamentals/openapi/overview)
 (`AddOpenApi()` / `MapOpenApi()`) that fill the gaps between what your API checks and what its
@@ -22,10 +23,11 @@ OpenAPI document says.
 | [Security](#security) | `AddBearerSecurity()`, `AddSecurity(...)` | A lock on exactly the endpoints that require authorization. |
 | [Description cleanup](#description-cleanup) | `AddDescriptionCleanup()` | "Gets or sets the name." reads "The name.". |
 | [Several documents](#several-documents) | `services.AddOpenApiDocuments(...)` | One document per endpoint group, configured once. |
+| [Typed errors](#typed-errors) | `AddResults()` | [Hlibz.Results](https://github.com/hlib-zinchenko/Hlibz.Results)' typed errors: each error an endpoint declares, with its code and the schema of its data. A package of its own: `Hlibz.OpenApi.Results`. |
 | [Use cases](#use-cases) | `AddUseCases()` | [Hlibz.UseCases](https://github.com/hlib-zinchenko/Hlibz.UseCases)' rules and validation `400`s. A package of its own: `Hlibz.OpenApi.UseCases`. |
 | [Paging](#paging) | `AddPaging()` | [Hlibz.Paging](https://github.com/hlib-zinchenko/Hlibz.Paging)'s `[SortableBy]`: what a sort string sorts by and its default. A package of its own: `Hlibz.OpenApi.Paging`. |
 
-Targets .NET 10 and 11.
+Targets .NET 11. .NET 10 apps stay on 1.x.
 
 ```bash
 dotnet add package Hlibz.OpenApi.AspNetCore
@@ -69,7 +71,6 @@ On a real API it misses a lot:
 
 | | Its generator | `AddXmlDocumentation()` |
 |---|---|---|
-| `internal` types (request bodies, `[AsParameters]` queries) | skipped on .NET 10 (.NET 11 includes them) | described |
 | Types from other projects and NuGet packages | skipped | described, from their XML files (packages': see below) |
 | `<see cref="City.Name"/>` | "a `string` City.Name" | "City.Name" |
 | A summary over several lines | keeps the line breaks | one line |
@@ -85,9 +86,10 @@ On a real API it misses a lot:
   for an integer enum, or the declared name where a query parameter's schema lists those. Every
   value is listed, an undocumented one with an empty description, because ReDoc shows this list
   in place of `enum`. An enum with no value summaries gets none.
-- `<remarks>` are never read: keep notes for developers there.
+- `<remarks>` are never read by it.
 - It replaces the generator's descriptions wherever it has a summary, so both can be on. The
-  generator still writes operation descriptions from handler methods' summaries;
+  generator still writes each operation's summary and description from its handler method's
+  `<summary>` and `<remarks>` (a method, not a lambda, and not `private`);
   `AddXmlDocumentation()` leaves operations alone. (Endpoint classes from
   [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints) describe
   their operations themselves.)
@@ -170,7 +172,7 @@ public sealed class ChangePassword
   XML summary goes too. The rule's keywords are dropped, so they don't end up on the shared
   component.
 
-The attributes still validate as usual, for example under .NET 10's `AddValidation()`.
+The attributes still validate as usual, for example under .NET's `AddValidation()`.
 
 **Rules from elsewhere.** Attributes that describe themselves through another library's
 interface plug in as a source: a function from a type, property or parameter to the
@@ -373,6 +375,66 @@ The returned list can feed a document picker, such as the one in
 app.MapReDocDocuments([.. documents.Select(document => new ReDocDocument(document.Name, document.Title))]);
 ```
 
+## Typed errors
+
+`Hlibz.OpenApi.Results` documents the errors [Hlibz.Results](https://github.com/hlib-zinchenko/Hlibz.Results)
+endpoints declare. An endpoint returning `Result<T, TError>`, `TError` a union of error records,
+says exactly what it can fail with; this package shows each error with its code and its data, so
+a client knows what to expect without calling the API.
+
+```bash
+dotnet add package Hlibz.OpenApi.Results
+```
+
+```csharp
+[Error("atlas_1005", ResultStatus.Conflict, "The country still has cities.")]
+public sealed record CountryHasCities(IReadOnlyList<CityId> CityIds) : Error;
+
+public union DeleteCountryError(CountryNotFound, CountryHasCities);
+
+builder.Services.AddResultErrorResponses();
+builder.Services.AddOpenApi("v1", options => options.AddResults());
+
+app.MapGroup("api/admin")
+    .WithResultResponses()
+    .MapDelete("countries/{id}", DeleteCountry); // returns Result<Unit, DeleteCountryError>
+```
+
+```json
+"CountryHasCitiesErrorResponse": {
+  "description": "The country still has cities.",
+  "allOf": [
+    { "$ref": "#/components/schemas/ErrorResponse" },
+    {
+      "type": "object",
+      "required": ["code", "details"],
+      "properties": {
+        "code": { "type": "string", "enum": ["atlas_1005"] },
+        "details": { "$ref": "#/components/schemas/CountryHasCities" }
+      }
+    }
+  ]
+}
+```
+
+- **One body per error.** Each declared error gets a component named after the error and the
+  body (`CountryHasCitiesErrorResponse`): Hlibz.Results' `ErrorResponse` with `code` narrowed to
+  the error's code and `details` to the error's own schema (left out for an error with no data),
+  described by the error's message. The status code's response refers to it.
+- **Several errors on one status code** are a `oneOf` of their bodies with a `discriminator` on
+  `code`, so a generated client gets a type per error.
+- **Envelopes.** Under `WithResultEnvelopes()` each body narrows `ResultEnvelope` instead
+  (`CountryHasCitiesResultEnvelope`).
+- **The rest of the document applies.** The details schema is an ordinary component: XML
+  summaries, strongly-typed IDs and rules describe it as they do any other.
+- **Left as they are:** a status code the endpoint documents itself
+  (`Produces<ProblemDetails>(409)`); the ambient errors (`ValidationFailed`, `Unauthorized`,
+  `Forbidden`, `Unavailable`), which any endpoint can answer with and the error code catalog
+  lists; an envelope of the app's own (`CreateEnvelope`); errors sent as `200`
+  (`EnvelopeAlwaysOk`).
+
+It's released with Hlibz.OpenApi.AspNetCore, at the same version.
+
 ## Use cases
 
 `Hlibz.OpenApi.UseCases` publishes what [Hlibz.UseCases](https://github.com/hlib-zinchenko/Hlibz.UseCases)'
@@ -483,8 +545,9 @@ major) and set where they go:
 
 ## Limitations
 
-- **.NET 10 and 11 only.** .NET 9's transformers use Microsoft.OpenApi 1.x, an object model too
-  different to share code with the 2.x and 3.x that .NET 10 and 11 use.
+- **.NET 11 only, from 2.0.** Hlibz.Results 3.0's typed errors are C# 15 unions, and
+  Microsoft.AspNetCore.OpenApi 11 is built on Microsoft.OpenApi 3.x. Version 1.x supports .NET 10
+  and 11.
 - **XML documentation needs the XML files on disk.** `AddXmlDocumentation()` reads each one next
   to its assembly; a single-file publish has none to read, so its types go undescribed.
 - **Swashbuckle.** Everything here plugs into Microsoft.AspNetCore.OpenApi's transformers.
@@ -493,11 +556,11 @@ major) and set where they go:
 
 ## Sample
 
-[`samples/Atlas.Api`](samples/README.md) is a small geography API that uses every feature above,
-on endpoints written with [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints)
-and rendered by [Hlibz.Redoc.AspNetCore](https://www.nuget.org/packages/Hlibz.Redoc.AspNetCore):
-a public and an admin document, IDs, rules, validation `400`s, locks and cleaned-up
-descriptions, with a `.http` file showing the API enforces what the documents say.
+[`samples/Atlas.Api`](samples/README.md) is a small geography API on plain minimal API endpoints
+that uses every feature of Hlibz.OpenApi.AspNetCore and Hlibz.OpenApi.Results, rendered by
+[Hlibz.Redoc.AspNetCore](https://www.nuget.org/packages/Hlibz.Redoc.AspNetCore): a public and an
+admin document, IDs, rules, validation `400`s, typed errors, locks and cleaned-up descriptions,
+with a `.http` file showing the API enforces what the documents say.
 
 ```bash
 dotnet run --project samples/Atlas.Api   # then open http://localhost:5290/api-docs
@@ -506,10 +569,11 @@ dotnet run --project samples/Atlas.Api   # then open http://localhost:5290/api-d
 ## Related packages
 
 - [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints):
-  minimal API endpoints as classes, grouped and checked at build time. The sample's endpoints
-  use it, and each class's `<summary>` becomes its operation description.
-- [Hlibz.Results.AspNetCore](https://www.nuget.org/packages/Hlibz.Results.AspNetCore): one error
-  body for minimal APIs and controllers.
+  minimal API endpoints as classes, grouped and checked at build time; each class's `<summary>`
+  becomes its operation description.
+- [Hlibz.Results.AspNetCore](https://www.nuget.org/packages/Hlibz.Results.AspNetCore): typed
+  errors and one error body for minimal APIs and controllers, published by
+  `Hlibz.OpenApi.Results`.
 - [Hlibz.Paging](https://www.nuget.org/packages/Hlibz.Paging): paging and sorting for list
   endpoints, described by `Hlibz.OpenApi.Paging`.
 - [Hlibz.UseCases](https://www.nuget.org/packages/Hlibz.UseCases): use cases with generated
@@ -518,9 +582,11 @@ dotnet run --project samples/Atlas.Api   # then open http://localhost:5290/api-d
 ## Versioning
 
 Every package in this repository is released under one version, from one `vX.Y.Z` tag.
-Microsoft.AspNetCore.OpenApi is declared as a minimum for each target framework (10.0.14 on
-.NET 10, 11.0.0 on .NET 11). A newer patch of it needs no new release here: reference it in your
-app and NuGet uses it.
+Microsoft.AspNetCore.OpenApi is declared as a minimum (11.0.0). A newer patch of it needs no new
+release here: reference it in your app and NuGet uses it.
+
+2.0 moved to .NET 11 only and added `Hlibz.OpenApi.Results`, for Hlibz.Results 3.0. .NET 10 apps
+stay on 1.x.
 
 Release notes: [GitHub Releases](https://github.com/hlib-zinchenko/Hlibz.OpenApi/releases).
 

@@ -50,6 +50,17 @@ public sealed class StronglyTypedIdTests
     }
 
     [Fact]
+    public async Task ListOfIds_ByDefault_ItemsAreUuidStrings()
+    {
+        JsonElement document = await StartAsync();
+
+        JsonElement items = CityProperty(document, "neighbours").GetProperty("items");
+        Assert.Equal("string", items.GetProperty("type").GetString());
+        Assert.Equal("uuid", items.GetProperty("format").GetString());
+        Assert.False(document.HasComponent("CountryId"));
+    }
+
+    [Fact]
     public async Task RouteParameter_ByDefault_IsUuidString()
     {
         JsonElement document = await StartAsync();

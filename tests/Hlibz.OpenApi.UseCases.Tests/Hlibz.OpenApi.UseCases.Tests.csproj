@@ -16,7 +16,8 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <!-- Direct, as in an app: its handler generator runs on this project's use cases. -->
     <PackageReference Include="Hlibz.UseCases" />
-    <PackageReference Include="Hlibz.Results.AspNetCore" />
+    <!-- Pinned to the 2.x Hlibz.UseCases 1.x is built on, until Hlibz.UseCases moves to Hlibz.Results 3.0. -->
+    <PackageReference Include="Hlibz.Results.AspNetCore" VersionOverride="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,26 +5,47 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/cities/{id}": {
+    "/api/countries": {
       "get": {
         "tags": [
-          "Cities"
+          "Countries"
         ],
-        "summary": "Gets one city by its id.",
-        "description": "Gets one city by its id; an unknown id is a `404`.",
-        "operationId": "GetCity",
+        "summary": "Gets every country.",
+        "description": "Gets every country in the atlas, sorted by name.",
+        "operationId": "GetCountries",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/countries/{id}": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Gets one country by its id.",
+        "description": "An unknown id is a `404`.",
+        "operationId": "GetCountry",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -34,7 +55,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CityDto"
+                  "$ref": "#/components/schemas/CountryDto"
                 }
               }
             }
@@ -42,9 +63,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/CountryNotFoundErrorResponse"
                 }
               }
             }
@@ -162,6 +183,53 @@
         }
       }
     },
+    "/api/cities/{id}": {
+      "get": {
+        "tags": [
+          "Cities"
+        ],
+        "summary": "Gets one city by its id.",
+        "description": "An unknown id is a `404`.",
+        "operationId": "GetCity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CityNotFoundErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cities/suggestions": {
       "post": {
         "tags": [
@@ -184,26 +252,6 @@
           "202": {
             "description": "Accepted"
           },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "400": {
             "description": "The request didn't pass validation.",
             "content": {
@@ -220,74 +268,6 @@
             "Bearer": [ ]
           }
         ]
-      }
-    },
-    "/api/countries": {
-      "get": {
-        "tags": [
-          "Countries"
-        ],
-        "summary": "Gets every country.",
-        "description": "Gets every country in the atlas, sorted by name.",
-        "operationId": "GetCountries",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CountryDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/countries/{id}": {
-      "get": {
-        "tags": [
-          "Countries"
-        ],
-        "summary": "Gets one country by its id.",
-        "description": "Gets one country by its id; an unknown id is a `404`.",
-        "operationId": "GetCountry",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CountryDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
       }
     }
   },
@@ -337,6 +317,50 @@
           }
         },
         "description": "A city."
+      },
+      "CityNotFound": {
+        "required": [
+          "cityId"
+        ],
+        "type": "object",
+        "properties": {
+          "cityId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The id that wasn't found.",
+            "format": "int32"
+          }
+        },
+        "description": "No city has the id asked for."
+      },
+      "CityNotFoundErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "required": [
+              "code",
+              "details"
+            ],
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "atlas_1002"
+                ],
+                "type": "string"
+              },
+              "details": {
+                "$ref": "#/components/schemas/CityNotFound"
+              }
+            }
+          }
+        ],
+        "description": "The city wasn't found."
       },
       "Continent": {
         "enum": [
@@ -388,6 +412,77 @@
         },
         "description": "A country, as listed to everyone."
       },
+      "CountryNotFound": {
+        "required": [
+          "countryId"
+        ],
+        "type": "object",
+        "properties": {
+          "countryId": {
+            "type": "string",
+            "description": "The id that wasn't found.",
+            "format": "uuid"
+          }
+        },
+        "description": "No country has the id asked for."
+      },
+      "CountryNotFoundErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "required": [
+              "code",
+              "details"
+            ],
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "atlas_1001"
+                ],
+                "type": "string"
+              },
+              "details": {
+                "$ref": "#/components/schemas/CountryNotFound"
+              }
+            }
+          }
+        ],
+        "description": "The country wasn't found."
+      },
+      "ErrorResponse": {
+        "required": [
+          "message",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validationErrors": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "details": { }
+        }
+      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -432,44 +527,6 @@
                 "type": "string"
               }
             }
-          }
-        }
-      },
-      "ProblemDetails": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "title": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "status": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "detail": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "instance": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },

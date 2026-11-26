@@ -7,34 +7,25 @@
         <PackageVersion Include="Hlibz.UseCases" Version="1.0.0" />
         <!-- Hlibz.OpenApi.Paging: the attribute it describes. A minimum, packed as ">=". -->
         <PackageVersion Include="Hlibz.Paging" Version="1.1.0" />
-        <!-- Hlibz.OpenApi.UseCases' tests: the 400 body apps answer use case failures with. -->
-        <PackageVersion Include="Hlibz.Results.AspNetCore" Version="2.2.0" />
-        <!-- Sample-only: the endpoint and ReDoc packages the sample app is built with. -->
-        <PackageVersion Include="Hlibz.MinimalApi.Endpoints" Version="1.0.0" />
+        <!--
+            Hlibz.OpenApi.Results: the declared errors it documents. A minimum, packed as ">=".
+            Hlibz.OpenApi.UseCases' tests pin 2.2.0, what Hlibz.UseCases 1.x is built on.
+        -->
+        <PackageVersion Include="Hlibz.Results.AspNetCore" Version="3.0.0-preview.1" />
+        <!-- Sample-only: the ReDoc page the sample app's documents are shown on. -->
         <PackageVersion Include="Hlibz.Redoc.AspNetCore" Version="2.5.0" />
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
         <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.36.0.15337" />
         <PackageVersion Include="StyleCop.Analyzers" Version="1.3.180" />
         <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
         <PackageVersion Include="xunit.v3" Version="4.0.3" />
-    </ItemGroup>
-
-    <!--
-        One Microsoft.AspNetCore.OpenApi major per target framework: 10.x is built on
-        Microsoft.OpenApi 2.x, 11.x on 3.x. Both are minimums: packed as ">=" dependencies, so an
-        app picks any newer patch itself.
-    -->
-    <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-        <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
-        <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+        <!--
+            Microsoft.AspNetCore.OpenApi 11 is built on Microsoft.OpenApi 3.x. A minimum: packed
+            as a ">=" dependency, so an app picks any newer patch itself.
+        -->
         <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
         <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
-        <!--
-            Sample-only: writes the documents at build time. Its tool only runs apps of its own
-            major (10.x ships a net10.0 tool, 11.x a net11.0 one), hence per target framework.
-        -->
+        <!-- Sample-only: writes the documents at build time. -->
         <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="11.0.0" />
     </ItemGroup>
 </Project>

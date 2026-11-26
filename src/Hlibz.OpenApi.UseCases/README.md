@@ -6,7 +6,7 @@
 [![CI](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml/badge.svg)](https://github.com/hlib-zinchenko/Hlibz.OpenApi/actions/workflows/ci.yml)
 
 Publishes [Hlibz.UseCases](https://www.nuget.org/packages/Hlibz.UseCases) in OpenAPI documents
-built with Microsoft.AspNetCore.OpenApi, for .NET 10 and 11: what each use case checks, and the
+built with Microsoft.AspNetCore.OpenApi, for .NET 11: what each use case checks, and the
 `400` an invalid one is answered with.
 
 ```bash

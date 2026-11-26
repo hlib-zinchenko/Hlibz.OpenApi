@@ -11,7 +11,7 @@ public static class Documents
     /// <summary>The endpoint group name of every public group.</summary>
     public const string PublicGroup = "Locations";
 
-    /// <summary>The endpoint group name of every <see cref="IAdminEndpointGroup"/>.</summary>
+    /// <summary>The endpoint group name of the admin API.</summary>
     public const string AdminGroup = "LocationsAdmin";
 
     public static readonly OpenApiDocumentDefinition Public =

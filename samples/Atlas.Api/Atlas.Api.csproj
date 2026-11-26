@@ -15,13 +15,13 @@
       analyzer, and analyzers don't flow through Hlibz.OpenApi.AspNetCore's reference.
     -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Hlibz.MinimalApi.Endpoints" />
     <PackageReference Include="Hlibz.Redoc.AspNetCore" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Hlibz.OpenApi.AspNetCore\Hlibz.OpenApi.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Hlibz.OpenApi.Results\Hlibz.OpenApi.Results.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,9 +3,9 @@
 ## Atlas.Api
 
 A small geography API (countries and cities, in memory) that uses everything
-Hlibz.OpenApi.AspNetCore does, on endpoints written with
-[Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints) and
-documented with [Hlibz.Redoc.AspNetCore](https://www.nuget.org/packages/Hlibz.Redoc.AspNetCore).
+Hlibz.OpenApi.AspNetCore and Hlibz.OpenApi.Results do, on plain minimal API endpoints
+(`Endpoints/`), documented with
+[Hlibz.Redoc.AspNetCore](https://www.nuget.org/packages/Hlibz.Redoc.AspNetCore).
 
 ```bash
 dotnet run --project samples/Atlas.Api
@@ -17,15 +17,16 @@ showing that the API enforces what its documents say.
 
 | Feature | Where to look | Code |
 |---|---|---|
-| Several documents | **Atlas** holds `api/countries` and `api/cities`; **Atlas (Admin)** holds `api/admin`. The `/` redirect has no group name, so it's in neither. | `Documents`, `AddOpenApiDocuments` and the `ConfigureGroups` convention in `Program.cs` |
+| Several documents | **Atlas** holds `api/countries` and `api/cities`; **Atlas (Admin)** holds `api/admin`. The `/` redirect has no group name, so it's in neither. | `Documents`, `AddOpenApiDocuments` in `Program.cs`, each group's `WithGroupName` in `Endpoints/` |
 | Strongly-typed IDs | `CountryDto.id` and `GET api/countries/{id}`: `uuid` strings. `CityDto.id` and `GET api/cities/{id}`: `int32`. The `countryId` filter: nullable `uuid`. `countryIds`: an array of `uuid`s. No `CountryId` or `CityId` component. | `Domain/CountryId.cs`, `Domain/CityId.cs` |
 | A rule with a keyword | `SuggestCityRequest.countryId`: `not: { const: "000…" }` and "Must not be the empty id.". `CreateCountryRequest.code`: `pattern: ^[A-Z]{2}$`. `borders` and the `codes`/`countryIds` filters: `uniqueItems`. | `Rules/` |
 | A rule in words only | The cross-field check on the city search, in the operation's description (an `[AsParameters]` type has no schema). `CreateCountryRequest.continent`: "Antarctica has no countries.", next to the shared `Continent` component, which stays clean. | `[OpenApiRule]` in `Domain/Models.cs` |
 | `x-rules` | Shown as "rules:" under each field, because the ReDoc page turns on `showExtensions` for it. | `MapReDocDocuments` in `Program.cs` |
+| Typed errors | The `404`s of `GET api/countries/{id}` and `GET api/cities/{id}`: `CountryNotFoundErrorResponse` and `CityNotFoundErrorResponse`, each with its `code` and the id in `details`. `POST api/admin/cities`' `409`: a `oneOf` of `CityNameTakenErrorResponse` and `CapitalTakenErrorResponse` by `code`. `DELETE api/admin/countries/{id}`'s `409`: `CountryHasCities`, its `cityIds` the `int32`s a `CityId` stands for. | `Domain/Errors.cs`, `Domain/ErrorSets.cs`, `AddResults()` and `AddResultErrorResponses()` in `Program.cs`, `WithResultResponses()` in `Endpoints/` |
 | Validation problems | A `400` with `HttpValidationProblemDetails` on the city search, the suggestion and the two admin `POST`s, where `AddValidation()` can fail; none on `GET api/cities/{id}` or `GET api/countries/{id}`, whose ID parameters have nothing to check. No endpoint declares its own `400`. | `AddValidationProblems()` and `AddProblemDetails()` in `Program.cs` |
 | Security | A lock on `POST api/cities/suggestions` (a `Member` policy) and on the admin endpoints, which offer "Bearer or ApiKey". No lock on the rest, or on `GET api/admin/status`, which opts out with `AllowAnonymous()`. | `AddBearerSecurity`, plus `AddSecurity("ApiKey", …)` for the admin document only |
 | Description cleanup | Every property and parameter reads "The city's population…" and "Whether the city is…", though the summaries say "Gets or sets…". Operation summaries and descriptions keep their "Gets…". | `AddDescriptionCleanup()` |
-| XML documentation | Every schema, property and parameter description above comes from a `<summary>`, read by `AddXmlDocumentation()` from the XML file `GenerateDocumentationFile` writes, flattened to one line, crefs written as the name they refer to. The `Continent` component lists each value with its `<summary>` (`x-enumDescriptions`, shown by ReDoc as a table). (On .NET 11 Microsoft.AspNetCore.OpenApi's own generator also covers `internal` request types such as `SuggestCityRequest`; on .NET 10 it skips them, and on either it never reads other assemblies' or packages' XML files.) Each operation's description is its endpoint class's `<summary>`, which Hlibz.MinimalApi.Endpoints publishes; notes for developers stay in `<remarks>`. | `AddXmlDocumentation()` in `Program.cs`, `samples/Directory.Build.props`, `Endpoints/` |
+| XML documentation | Every schema, property and parameter description above comes from a `<summary>`, read by `AddXmlDocumentation()` from the XML file `GenerateDocumentationFile` writes, flattened to one line, crefs written as the name they refer to. The `Continent` component lists each value with its `<summary>` (`x-enumDescriptions`, shown by ReDoc as a table). (Microsoft.AspNetCore.OpenApi's own generator also covers `internal` request types such as `SuggestCityRequest`, but never reads other assemblies' or packages' XML files.) Each operation's summary and description are its handler method's `<summary>` and `<remarks>`, which that generator writes (handlers are `internal` methods: it skips `private` ones and lambdas); notes for developers are `//` comments. | `AddXmlDocumentation()` in `Program.cs`, `samples/Directory.Build.props`, `Endpoints/` |
 
 The rules aren't only documentation: `AddValidation()` enforces the same attributes, so the
 requests in the `.http` file get the `400`s the documents describe, as
@@ -38,5 +39,6 @@ Every build also writes both documents to [`Atlas.Api/openapi`](Atlas.Api/openap
 `Atlas.Api.csproj`), so a client gets them without running the API. They're committed, and CI
 fails when a build changes them: keep them in step by building before you commit.
 
-The sample targets net11.0 only, references the library project and gets the other packages
-from NuGet. It is never packed.
+The sample targets net11.0 only, references the library projects and gets the other packages
+from NuGet (Hlibz.Results.AspNetCore from the local feed `NuGet.config` names, until 3.0 ships).
+It is never packed.

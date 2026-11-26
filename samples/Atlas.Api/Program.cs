@@ -1,14 +1,14 @@
-// Atlas: a small geography API showing everything Hlibz.OpenApi.AspNetCore does, on endpoints
-// written with Hlibz.MinimalApi.Endpoints and documented with Hlibz.Redoc.AspNetCore.
+// Atlas: a small geography API showing everything Hlibz.OpenApi.AspNetCore and
+// Hlibz.OpenApi.Results do, on plain minimal API endpoints, documented with Hlibz.Redoc.AspNetCore.
 // Run it and open http://localhost:5290/api-docs. samples/README.md says what to look for where.
 
 using Atlas.Api;
 using Atlas.Api.Domain;
 using Atlas.Api.Endpoints;
 
-using Hlibz.MinimalApi.Endpoints;
 using Hlibz.OpenApi;
 using Hlibz.Redoc.Extensions;
+using Hlibz.Results.AspNetCore;
 
 using Microsoft.OpenApi;
 
@@ -16,6 +16,9 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<AtlasStore>();
 builder.Services.AddValidation();
+
+// The error body every Result failure is sent with: its code, message and details.
+builder.Services.AddResultErrorResponses();
 
 // Validation failures are written through it, as application/problem+json.
 builder.Services.AddProblemDetails();
@@ -44,6 +47,7 @@ IReadOnlyList<OpenApiDocumentDefinition> documents = builder.Services.AddOpenApi
             .AddOpenApiRules()
             .AddDescriptionCleanup()
             .AddValidationProblems()
+            .AddResults()
             .AddBearerSecurity(bearer =>
             {
                 bearer.BearerFormat = null;
@@ -72,11 +76,10 @@ app.UseOutputCache();
 
 app.MapOpenApi().CacheOutput();
 
-// Each group goes into the document for its audience; AddOpenApiDocuments filters on this name.
-app.MapEndpoints(typeof(Program).Assembly, options => options.ConfigureGroups(context =>
-    context.Builder.WithGroupName(context.Group is IAdminEndpointGroup
-        ? Documents.AdminGroup
-        : Documents.PublicGroup)));
+// Each group names the document for its audience (WithGroupName); AddOpenApiDocuments filters on it.
+app.MapCountries();
+app.MapCities();
+app.MapAdmin();
 
 // The same list feeds ReDoc's picker. showExtensions makes each rule's x-rules list visible.
 app.MapReDocDocuments(
