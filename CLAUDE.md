@@ -98,8 +98,7 @@ policy). Ambient errors, custom envelopes and `EnvelopeAlwaysOk` are left alone.
 Hlibz.Results generator sees their errors.
 
 Until the .NET 11 majors ship, `NuGet.config` adds the local folder feed `~/LocalNuGet`, where
-Hlibz.Results 3.0 previews are packed; Hlibz.OpenApi.UseCases stays on Hlibz.UseCases 1.x (built
-on Hlibz.Results 2.x, which its tests pin) until Hlibz.UseCases moves to Hlibz.Results 3.0.
+Hlibz.Results 3.0 and Hlibz.UseCases 2.0 previews are packed.
 
 `Internal/ParameterSchemas` answers "which type does this parameter schema stand for": ASP.NET
 Core passes the parameter's `ParameterDescription` to *every* schema under it (an array's item

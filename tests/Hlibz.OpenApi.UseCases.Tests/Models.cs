@@ -36,6 +36,25 @@ internal sealed class SignUpCommandHandler : ISignUpCommandHandler
         Task.FromResult(Result<AccountDto>.Success(new AccountDto(useCase.Email)));
 }
 
+/// <summary>Changes an account's email, declaring its errors.</summary>
+public sealed record ChangeEmailCommand([Required, EmailAddress] string Email) : IUseCase;
+
+[Error("accounts_1001", ResultStatus.Conflict, "The email is taken.")]
+public sealed record EmailTaken(string Email) : Error;
+
+// A union compiles to a struct without equality, which CA1815 flags.
+#pragma warning disable CA1815
+public union ChangeEmailError(EmailTaken);
+#pragma warning restore CA1815
+
+public interface IChangeEmailCommandHandler : IUseCaseHandler<ChangeEmailCommand, AccountDto, ChangeEmailError>;
+
+internal sealed class ChangeEmailCommandHandler : IChangeEmailCommandHandler
+{
+    public Task<Result<AccountDto, ChangeEmailError>> HandleAsync(ChangeEmailCommand useCase, CancellationToken cancellationToken = default) =>
+        Task.FromResult<Result<AccountDto, ChangeEmailError>>(new AccountDto(useCase.Email));
+}
+
 /// <summary>Says hello: nothing to validate.</summary>
 public sealed record HelloQuery(string? Name) : IUseCase;
 

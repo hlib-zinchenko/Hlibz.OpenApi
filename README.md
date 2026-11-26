@@ -467,6 +467,10 @@ app.MapPost("cities", async (CreateCityCommand command, ICreateCityCommandHandle
 - **Only the HTTP contract is described.** A use case's rules reach the document on types the
   endpoint binds: bind the use case itself (as the body, or with `[AsParameters]`), or give it a
   record that is also the body (`UpdateCityCommand(int Id, CityChanges Changes)`).
+- **Declared errors.** A handler returning `Result<T, TError>`
+  (`IUseCaseHandler<TUseCase, TResult, TError>`, Hlibz.UseCases 2.0) declares its errors; return
+  its result from the endpoint and [`AddResults()`](#typed-errors) documents each one, with its
+  data, as for any other endpoint.
 
 It's released with Hlibz.OpenApi.AspNetCore, at the same version.
 

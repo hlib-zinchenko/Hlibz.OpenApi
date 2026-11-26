@@ -121,6 +121,19 @@ public sealed class UseCaseOpenApiTests
     }
 
     [Fact]
+    public async Task Operation_WithHandlerDeclaringErrors_Documents400()
+    {
+        JsonElement document = await TestApp.DocumentAsync(
+            options => options.AddUseCases(),
+            app => app.MapPut(
+                "email",
+                async (ChangeEmailCommand command, [FromServices] IChangeEmailCommandHandler handler) =>
+                    (await handler.HandleAsync(command)).ToHttpResult()));
+
+        Assert.True(document.Operation("/email", "put").GetProperty("responses").TryGetProperty("400", out _));
+    }
+
+    [Fact]
     public async Task Operation_WithHandlerOfUseCaseWithoutRules_DocumentsNo400()
     {
         JsonElement document = await TestApp.DocumentAsync(
