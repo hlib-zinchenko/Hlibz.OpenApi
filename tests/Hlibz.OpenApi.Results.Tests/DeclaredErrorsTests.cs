@@ -53,15 +53,23 @@ public sealed class DeclaredErrorsTests
     {
         JsonElement document = await TestApp.DocumentAsync(options => options.AddResults(), TestApp.MapOrders);
 
+        // ConcurrencyConflict is sent with 409 too: any result accepts it.
         JsonElement body = document.Operation("/orders/{id}", "delete").Body(409);
         Assert.Equal(
-            [TestApp.Component("OrderClosedErrorResponse"), TestApp.Component("OrderPaidErrorResponse")],
+            [
+                TestApp.Component("OrderClosedErrorResponse"),
+                TestApp.Component("OrderPaidErrorResponse"),
+                TestApp.Component("ConcurrencyConflictErrorResponse"),
+            ],
             body.GetProperty("oneOf").EnumerateArray().Select(schema => schema.Ref()));
         JsonElement discriminator = body.GetProperty("discriminator");
         Assert.Equal("code", discriminator.GetProperty("propertyName").GetString());
         JsonElement mapping = discriminator.GetProperty("mapping");
         Assert.Equal(TestApp.Component("OrderClosedErrorResponse"), mapping.GetProperty("orders_1002").GetString());
         Assert.Equal(TestApp.Component("OrderPaidErrorResponse"), mapping.GetProperty("orders_1003").GetString());
+        Assert.Equal(
+            TestApp.Component("ConcurrencyConflictErrorResponse"),
+            mapping.GetProperty("concurrency_conflict").GetString());
     }
 
     [Fact]
@@ -132,7 +140,110 @@ public sealed class DeclaredErrorsTests
     }
 
     [Fact]
-    public async Task Ambient_Errors_AreNotDocumentedPerOperation()
+    public async Task Status_SharedWithAnAmbientError_IsOneOfBoth()
+    {
+        JsonElement document = await TestApp.DocumentAsync(options => options.AddResults(), TestApp.MapPlaceOrder());
+
+        JsonElement body = document.Operation("/orders", "post").Body(400);
+        Assert.Equal(
+            [TestApp.Component("OrderEmptyErrorResponse"), TestApp.Component("ValidationFailedErrorResponse")],
+            body.GetProperty("oneOf").EnumerateArray().Select(schema => schema.Ref()));
+        JsonElement mapping = body.GetProperty("discriminator").GetProperty("mapping");
+        Assert.Equal(TestApp.Component("OrderEmptyErrorResponse"), mapping.GetProperty("orders_1004").GetString());
+        Assert.Equal(TestApp.Component("ValidationFailedErrorResponse"), mapping.GetProperty("validation_failed").GetString());
+    }
+
+    [Fact]
+    public async Task Status_SharedWithTheAuthorizationGate_KeepsForbidden()
+    {
+        JsonElement document = await TestApp.DocumentAsync(options => options.AddResults(), TestApp.MapPlaceOrder());
+
+        Assert.Equal(
+            [TestApp.Component("OrderNotYoursErrorResponse"), TestApp.Component("ForbiddenErrorResponse")],
+            document.Operation("/orders", "post").Body(403).GetProperty("oneOf").EnumerateArray().Select(schema => schema.Ref()));
+        JsonElement own = document.Schema("ForbiddenErrorResponse").GetProperty("allOf")[1];
+        Assert.Equal(["forbidden"], own.GetProperty("properties").GetProperty("code").GetProperty("enum").Strings());
+        Assert.Equal(["code"], own.GetProperty("required").Strings());
+    }
+
+    [Fact]
+    public async Task ValidationFailedBody_NarrowsValidationErrorsNotDetails()
+    {
+        JsonElement document = await TestApp.DocumentAsync(options => options.AddResults(), TestApp.MapPlaceOrder());
+
+        JsonElement body = document.Schema("ValidationFailedErrorResponse");
+        Assert.Equal(
+            "Validation failed. Please check the validation errors.",
+            body.GetProperty("description").GetString());
+        JsonElement own = body.GetProperty("allOf")[1];
+        Assert.Equal(["code", "validationErrors"], own.GetProperty("required").Strings().Order(StringComparer.Ordinal));
+        Assert.Equal(["validation_failed"], own.GetProperty("properties").GetProperty("code").GetProperty("enum").Strings());
+        Assert.False(own.GetProperty("properties").TryGetProperty("details", out _));
+        Assert.False(document.HasSchema(nameof(ValidationFailed)));
+    }
+
+    [Fact]
+    public async Task ValidationFailedBody_InAnEnvelope_NarrowsTheEnvelope()
+    {
+        JsonElement document = await TestApp.DocumentAsync(options => options.AddResults(), TestApp.MapPlaceOrder(envelope: true));
+
+        Assert.Equal(
+            [TestApp.Component("OrderEmptyResultEnvelope"), TestApp.Component("ValidationFailedResultEnvelope")],
+            document.Operation("/orders", "post").Body(400).GetProperty("oneOf").EnumerateArray().Select(schema => schema.Ref()));
+        JsonElement allOf = document.Schema("ValidationFailedResultEnvelope").GetProperty("allOf");
+        Assert.Equal(TestApp.Component(nameof(ResultEnvelope)), allOf[0].Ref());
+        Assert.Contains("validationErrors", allOf[1].GetProperty("required").Strings());
+    }
+
+    [Fact]
+    public async Task AmbientError_SentWithAnotherStatus_IsLeftOut()
+    {
+        JsonElement document = await TestApp.DocumentAsync(
+            options => options.AddResults(),
+            TestApp.MapPlaceOrder(),
+            services => services.AddResultErrorResponses(results =>
+                results.StatusCodes[ResultStatus.Invalid] = StatusCodes.Status422UnprocessableEntity));
+
+        JsonElement operation = document.Operation("/orders", "post");
+        Assert.Equal(TestApp.Component("OrderEmptyErrorResponse"), operation.Body(400).Ref());
+        Assert.False(operation.GetProperty("responses").TryGetProperty("422", out _));
+        Assert.False(document.HasSchema("ValidationFailedErrorResponse"));
+    }
+
+    [Fact]
+    public async Task Status_DeclaredBySeveralSets_ListsEveryError()
+    {
+        JsonElement document = await TestApp.DocumentAsync(
+            options => options.AddResults(),
+            app => app.MapGroup("orders").WithResultResponses()
+                .MapGet("{id:int}", Result<OrderDto, GetOrderError> (int id) => new OrderNotFound(id))
+                .ProducesErrorSet<CancelOrderError>());
+
+        JsonElement operation = document.Operation("/orders/{id}", "get");
+        Assert.Equal(TestApp.Component("OrderNotFoundErrorResponse"), operation.Body(404).Ref());
+        Assert.Equal(
+            [
+                TestApp.Component("OrderClosedErrorResponse"),
+                TestApp.Component("OrderPaidErrorResponse"),
+                TestApp.Component("ConcurrencyConflictErrorResponse"),
+            ],
+            operation.Body(409).GetProperty("oneOf").EnumerateArray().Select(schema => schema.Ref()));
+    }
+
+    [Fact]
+    public async Task ProducesErrorSet_OnAnIResultHandler_DocumentsEachError()
+    {
+        JsonElement document = await TestApp.DocumentAsync(
+            options => options.AddResults(),
+            app => app.MapGet("orders/{id:int}/receipt", IResult (int id) => Result.Failure(new OrderNotFound(id)).ToHttpResult())
+                .ProducesErrorSet<GetOrderError>());
+
+        JsonElement operation = document.Operation("/orders/{id}/receipt", "get");
+        Assert.Equal(TestApp.Component("OrderNotFoundErrorResponse"), operation.Body(404).Ref());
+    }
+
+    [Fact]
+    public async Task AmbientErrors_OnAStatusNoErrorDeclares_AreNotDocumented()
     {
         JsonElement document = await TestApp.DocumentAsync(options => options.AddResults(), TestApp.MapOrders);
 

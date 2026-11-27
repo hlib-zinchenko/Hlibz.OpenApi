@@ -90,6 +90,13 @@ POST {{host}}/api/admin/cities
 Authorization: Bearer demo-admin
 Content-Type: application/json
 
+{ "countryId": "00000000-0000-0000-0000-000000000001", "name": "Odesa", "isCapital": true, "population": 1010537 }
+
+### 400: CapitalWithoutPopulation (atlas_1006), one of the 400's oneOf with validation_failed
+POST {{host}}/api/admin/cities
+Authorization: Bearer demo-admin
+Content-Type: application/json
+
 { "countryId": "00000000-0000-0000-0000-000000000001", "name": "Odesa", "isCapital": true }
 
 ### 201, with a Location (WithCreatedLocation)

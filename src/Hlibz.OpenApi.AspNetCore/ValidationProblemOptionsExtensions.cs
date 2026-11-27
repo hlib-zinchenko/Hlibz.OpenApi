@@ -14,8 +14,10 @@ public static class ValidationProblemOptionsExtensions
     /// <c>400</c> but leaves it out of the document.
     /// </summary>
     /// <remarks>
-    /// An operation that already documents a <c>400</c> (<c>ProducesValidationProblem()</c>,
-    /// <c>ProducesProblem(400)</c>, <c>Produces&lt;T&gt;(400)</c>) is left as it is. Without
+    /// An operation that already documents a <c>400</c> keeps it: left as it is when it has the
+    /// response's content type (<c>ProducesValidationProblem()</c>, <c>ProducesProblem(400)</c>),
+    /// given the body under its own content type beside what it has when it doesn't (a typed
+    /// error's <c>Produces&lt;T&gt;(400)</c> as <c>application/json</c>). Without
     /// <c>AddValidation()</c> no operation is validated, so none changes.
     /// </remarks>
     /// <param name="options">The document's options.</param>

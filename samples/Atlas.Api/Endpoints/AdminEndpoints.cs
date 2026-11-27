@@ -70,10 +70,12 @@ internal static class AdminEndpoints
         return Unit.Value;
     }
 
-    // Its 409 is one of two errors, CityNameTaken or CapitalTaken: a oneOf told apart by code.
+    // Its 409 is one of two errors, CityNameTaken or CapitalTaken: a oneOf told apart by code. Its
+    // 400 is CapitalWithoutPopulation or the ambient validation_failed (a oneOf of both), plus the
+    // problem+json AddValidation() answers an invalid body with.
 
     /// <summary>Adds a city.</summary>
-    /// <remarks>Adds a city to an existing country. A country has one capital, and one city by each name.</remarks>
+    /// <remarks>Adds a city to an existing country. A country has one capital, whose population is given, and one city by each name.</remarks>
     internal static Result<CityDto, CreateCityError> CreateCity(
         CreateCityRequest request,
         [FromServices] AtlasStore store)
@@ -81,6 +83,11 @@ internal static class AdminEndpoints
         if (store.FindCountry(request.CountryId) is null)
         {
             return new CountryNotFound(request.CountryId);
+        }
+
+        if (request.IsCapital && request.Population is null)
+        {
+            return new CapitalWithoutPopulation();
         }
 
         IReadOnlyList<CityDto> cities = store.CitiesOf(request.CountryId);

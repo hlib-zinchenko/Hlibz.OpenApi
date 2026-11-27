@@ -49,15 +49,43 @@ public sealed class ValidationProblemTests
     }
 
     [Fact]
-    public async Task AddValidationProblems_WithDeclared400_LeavesIt()
+    public async Task AddValidationProblems_WithDeclared400OfItsContentType_LeavesIt()
     {
-        JsonElement document = await StartAsync(options => options.AddValidationProblems());
+        HttpClient client = await StartClientAsync(options => options.AddValidationProblems(), problemDetails: true);
+        JsonElement document = await client.GetDocumentAsync();
 
-        JsonElement response = Response400(document, "/declared", "post");
+        JsonElement content = Response400(document, "/declared", "post").GetProperty("content");
+        Assert.Equal(["application/problem+json"], [.. content.EnumerateObject().Select(media => media.Name)]);
         Assert.Equal(
             "#/components/schemas/ProblemDetails",
-            response.GetProperty("content").GetProperty("application/problem+json")
-                .GetProperty("schema").GetProperty("$ref").GetString());
+            content.GetProperty("application/problem+json").GetProperty("schema").GetProperty("$ref").GetString());
+    }
+
+    [Fact]
+    public async Task AddValidationProblems_WithDeclared400OfAnotherContentType_AddsItsBody()
+    {
+        HttpClient client = await StartClientAsync(options => options.AddValidationProblems(), problemDetails: true);
+        JsonElement document = await client.GetDocumentAsync();
+
+        JsonElement response = Response400(document, "/declared-error", "post");
+        Assert.Equal("Bad Request", response.GetProperty("description").GetString());
+        JsonElement content = response.GetProperty("content");
+        Assert.Equal(
+            "#/components/schemas/ErrorResponse",
+            content.GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.Equal(
+            "#/components/schemas/HttpValidationProblemDetails",
+            content.GetProperty("application/problem+json").GetProperty("schema").GetProperty("$ref").GetString());
+    }
+
+    [Fact]
+    public async Task AddValidationProblems_WithDeclared400_AndNothingValidated_LeavesIt()
+    {
+        HttpClient client = await StartClientAsync(options => options.AddValidationProblems(), problemDetails: true);
+        JsonElement document = await client.GetDocumentAsync();
+
+        JsonElement content = Response400(document, "/declared-plain", "get").GetProperty("content");
+        Assert.Equal(["application/json"], [.. content.EnumerateObject().Select(media => media.Name)]);
     }
 
     [Fact]
@@ -137,6 +165,10 @@ public sealed class ValidationProblemTests
                 app.MapGet("/service", (Settings settings) => TypedResults.Ok(settings.PageSize));
                 app.MapPost("/declared", (Signup signup) => TypedResults.Ok(signup.Name))
                     .ProducesProblem(StatusCodes.Status400BadRequest);
+                app.MapPost("/declared-error", (Signup signup) => TypedResults.Ok(signup.Name))
+                    .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+                app.MapGet("/declared-plain", (int page) => TypedResults.Ok(page))
+                    .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
             },
             services =>
             {

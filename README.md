@@ -297,8 +297,11 @@ It goes on **exactly the operations that can answer with it**:
   also registers types with nothing to check, such as `record struct CityId(int Value)`, and
   validating those never fails.
 
-An operation that already documents a `400` (`ProducesValidationProblem()`,
-`ProducesProblem(400)`, `Produces<T>(400)`) is left as it is.
+An operation that already documents a `400` keeps it. When that `400` has the content type the
+validation answers with (`ProducesValidationProblem()`, `ProducesProblem(400)` with problem
+details on), it's left as it is; when it doesn't, the validation body is added beside it under its
+own content type. So a typed error's `400` (`Produces<ErrorResponse>(400)`, or Hlibz.Results'
+`WithResultResponses()`) doesn't hide the problem an invalid request gets.
 
 The content type is the one the app answers with: `application/problem+json` when it calls
 `AddProblemDetails()` (or registers another `IProblemDetailsService`), `application/json` when it
@@ -449,14 +452,24 @@ app.MapGroup("api/admin")
   described by the error's message. The status code's response refers to it.
 - **Several errors on one status code** are a `oneOf` of their bodies with a `discriminator` on
   `code`, so a generated client gets a type per error.
+- **Endpoints that don't return the result.** A handler returning an `IResult` (a file, or a
+  result it sends with `ToHttpResult()`) declares its set with Hlibz.Results'
+  `.ProducesErrorSet<TErrorSet>()`, and is documented the same way; so is every set an endpoint
+  declares, its handler's included.
 - **Envelopes.** Under `WithResultEnvelopes()` each body narrows `ResultEnvelope` instead
   (`CountryHasCitiesResultEnvelope`).
+- **Ambient errors on a shared status code.** Any endpoint can answer with the ambient errors
+  (`ValidationFailed`, `Unauthorized`, `Forbidden`, `ConcurrencyConflict`, `RateLimited`,
+  `Unavailable`), so a status code with declared errors lists the ones the app sends with it too
+  (`ResultHttpOptions.StatusCodes`): a declared `400` is a `oneOf` with
+  `ValidationFailedErrorResponse` (`code` and `validationErrors` required), a declared `403` with
+  `ForbiddenErrorResponse`, a declared `409` with `ConcurrencyConflictErrorResponse`. Without them a generated client
+  would miss the codes validation and the authorization gate send.
 - **The rest of the document applies.** The details schema is an ordinary component: XML
   summaries, strongly-typed IDs and rules describe it as they do any other.
 - **Left as they are:** a status code the endpoint documents itself
-  (`Produces<ProblemDetails>(409)`); the ambient errors (`ValidationFailed`, `Unauthorized`,
-  `Forbidden`, `Unavailable`), which any endpoint can answer with and the error code catalog
-  lists; an envelope of the app's own (`CreateEnvelope`); errors sent as `200`
+  (`Produces<ProblemDetails>(409)`); a status code only ambient errors are sent with (the
+  error code catalog lists those); an envelope of the app's own (`CreateEnvelope`); errors sent as `200`
   (`EnvelopeAlwaysOk`).
 
 It's released with Hlibz.OpenApi.AspNetCore, at the same version.
@@ -489,7 +502,9 @@ app.MapPost("cities", async (CreateCityCommand command, ICreateCityCommandHandle
 - **The `400`.** An operation whose handler takes the handler of a use case that can fail
   validation (its own interface or `IUseCaseHandler<...>`, as the use case catalog says) gets a
   `400` with `HttpValidationProblemDetails`, or the `ValidationResponseType` you set, such as
-  Hlibz.Results' `ErrorResponse`. One that already documents a `400` keeps its own.
+  Hlibz.Results' `ErrorResponse`. One that already documents a `400` keeps its own: with
+  Hlibz.Results, a typed error's `400` lists `validation_failed` already
+  ([`AddResults()`](#typed-errors)).
 - **Only the HTTP contract is described.** A use case's rules reach the document on types the
   endpoint binds: bind the use case itself (as the body, or with `[AsParameters]`), or give it a
   record that is also the body (`UpdateCityCommand(int Id, CityChanges Changes)`).

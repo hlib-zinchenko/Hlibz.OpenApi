@@ -28,7 +28,8 @@ builder.Services.AddOpenApi("v1", options => options
 - DataAnnotations on positional record parameters (`record CreateCityCommand([MaxLength(60)] string Name)`)
   are published too: Microsoft.AspNetCore.OpenApi reads properties only.
 - An operation whose handler takes the handler of a use case that can fail validation gets a
-  `400` (`HttpValidationProblemDetails`, or the type you set), unless it documents one already.
+  `400` (`HttpValidationProblemDetails`, or the type you set), unless it documents one already
+  (with Hlibz.Results, a typed error's `400` lists `validation_failed` already: `AddResults()`).
 
 Rules reach the document only on types the endpoint binds: bind the use case itself, or give it a
 record that is also the body.

@@ -57,7 +57,9 @@ Public API, all in namespace `Hlibz.OpenApi`, each feature an extension on `Open
   `TryGetValidatableParameterInfo` accepts) **and**
   `Internal/ValidationRules` (a `ValidationAttribute`/`IValidatableObject` somewhere inside it),
   since the generator registers rule-less record structs such as IDs. Content type follows
-  `IProblemDetailsService` (problem+json) or not (plain JSON: tested). A declared `400` wins.
+  `IProblemDetailsService` (problem+json) or not (plain JSON: tested). A declared `400` wins for
+  its content type: one without that content type (a typed error's `application/json`, which
+  `WithResultResponses()` documents before transformers run) gets the body added beside it.
 - `AddDescriptionCleanup()`: a *document* transformer (runs last, after XML comments and `$ref`
   descriptions are in place); schemas and parameters only, never operation text.
 - `services.AddOpenApiDocuments(definitions, addOpenApi, configure)`: one document per group.
@@ -87,13 +89,20 @@ directly, so its generator sees their DTOs.
 minimum, and on Hlibz.OpenApi.AspNetCore at the same version): `AddResults()` adds
 `Internal/DeclaredErrorsOperationTransformer`, which reads the `DeclaredErrorsMetadata` that
 `WithResultResponses()`/`WithResultEnvelopes()` put on an endpoint returning
-`Result<T, TError>`. Per status code it replaces the body Hlibz.Results documented (only a `$ref`
+`Result<T, TError>` and `ProducesErrorSet<TErrorSet>()` on any endpoint (Hlibz.Results 3.0
+preview.2): every one on the endpoint, merged. Per status code it replaces the body Hlibz.Results documented (only a `$ref`
 to `ErrorResponse`/`ResultEnvelope`: a response the endpoint declares itself wins) with each
 error's body component, `{ErrorSchemaId}{BodySchemaId}`: `allOf` of the body and an object
 narrowing `code` (an `enum` of one) and `details` (a `$ref` to the error's own schema, only when
 `ErrorDescriptor.HasDetails`), described by the error's message; several errors are a `oneOf`
 with a `discriminator` on `code`. Property names come from the body's schema (the app's naming
-policy). Ambient errors, custom envelopes and `EnvelopeAlwaysOk` are left alone. Its tests
+policy). A status code with declared errors also lists the ambient errors the app's
+`ResultHttpOptions.StatusCodes` sends with it (a `Result<T, TError>` accepts any of them, and
+`WithResultResponses()` documents its `400`/`403` before any transformer runs, so
+`AddUseCases()` sees a declared `400` and adds nothing; `AddValidationProblems()` adds its
+problem only under another content type):
+`ValidationFailed`'s body requires `validationErrors` and has no `details`. A status code with
+only ambient errors, custom envelopes and `EnvelopeAlwaysOk` are left alone. Its tests
 (`tests/Hlibz.OpenApi.Results.Tests`) reference Hlibz.Results.AspNetCore directly, so the
 Hlibz.Results generator sees their errors.
 

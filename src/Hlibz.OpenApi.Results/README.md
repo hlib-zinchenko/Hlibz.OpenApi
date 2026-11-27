@@ -35,10 +35,14 @@ app.MapGroup("api/admin")
   `ErrorResponse` with `code` narrowed to the error's code and `details` to the error's schema,
   described by the error's message.
 - Several errors on one status code are a `oneOf` with a `discriminator` on `code`.
+- A handler returning an `IResult` declares its set with `.ProducesErrorSet<TErrorSet>()`
+  (Hlibz.Results.AspNetCore), documented the same way.
 - Under `WithResultEnvelopes()` the bodies narrow `ResultEnvelope` instead.
-- A status code the endpoint documents itself is left as it is, and so are the ambient errors
-  (`ValidationFailed`, `Unauthorized`, `Forbidden`, `Unavailable`), which any endpoint can answer
-  with.
+- A status code with declared errors also lists the ambient errors (`ValidationFailed`,
+  `Unauthorized`, `Forbidden`, `ConcurrencyConflict`, `RateLimited`, `Unavailable`) sent with it,
+  since any endpoint can answer with them: a declared `400` keeps `validation_failed`, a declared
+  `403` `forbidden`, a declared `409` `concurrency_conflict`.
+- A status code the endpoint documents itself is left as it is, and so is one no error declares.
 
 Targets .NET 11. .NET 10 apps stay on 1.x.
 

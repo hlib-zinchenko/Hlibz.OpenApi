@@ -42,10 +42,7 @@ public sealed record ChangeEmailCommand([Required, EmailAddress] string Email) :
 [Error("accounts_1001", ResultStatus.Conflict, "The email is taken.")]
 public sealed record EmailTaken(string Email) : Error;
 
-// A union compiles to a struct without equality, which CA1815 flags.
-#pragma warning disable CA1815
 public union ChangeEmailError(EmailTaken);
-#pragma warning restore CA1815
 
 public interface IChangeEmailCommandHandler : IUseCaseHandler<ChangeEmailCommand, AccountDto, ChangeEmailError>;
 

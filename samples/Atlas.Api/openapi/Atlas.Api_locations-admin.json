@@ -93,7 +93,21 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CountryHasCitiesErrorResponse"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CountryHasCitiesErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConcurrencyConflictErrorResponse"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "code",
+                    "mapping": {
+                      "atlas_1005": "#/components/schemas/CountryHasCitiesErrorResponse",
+                      "concurrency_conflict": "#/components/schemas/ConcurrencyConflictErrorResponse"
+                    }
+                  }
                 }
               }
             }
@@ -115,7 +129,7 @@
           "Atlas admin"
         ],
         "summary": "Adds a city.",
-        "description": "Adds a city to an existing country. A country has one capital, and one city by each name.",
+        "description": "Adds a city to an existing country. A country has one capital, whose population is given, and one city by each name.",
         "operationId": "CreateCity",
         "requestBody": {
           "content": {
@@ -134,6 +148,35 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CapitalWithoutPopulationErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationFailedErrorResponse"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "code",
+                    "mapping": {
+                      "atlas_1006": "#/components/schemas/CapitalWithoutPopulationErrorResponse",
+                      "validation_failed": "#/components/schemas/ValidationFailedErrorResponse"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -159,25 +202,19 @@
                     },
                     {
                       "$ref": "#/components/schemas/CapitalTakenErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConcurrencyConflictErrorResponse"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "code",
                     "mapping": {
                       "atlas_1003": "#/components/schemas/CityNameTakenErrorResponse",
-                      "atlas_1004": "#/components/schemas/CapitalTakenErrorResponse"
+                      "atlas_1004": "#/components/schemas/CapitalTakenErrorResponse",
+                      "concurrency_conflict": "#/components/schemas/ConcurrencyConflictErrorResponse"
                     }
                   }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The request didn't pass validation.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -300,6 +337,28 @@
         ],
         "description": "The country already has a capital."
       },
+      "CapitalWithoutPopulationErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "required": [
+              "code"
+            ],
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "atlas_1006"
+                ],
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "description": "A capital needs its population."
+      },
       "CityDto": {
         "required": [
           "id",
@@ -388,6 +447,28 @@
           }
         ],
         "description": "The country already has a city by that name."
+      },
+      "ConcurrencyConflictErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "required": [
+              "code"
+            ],
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "concurrency_conflict"
+                ],
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "description": "The data was changed by someone else. Please reload and retry."
       },
       "Continent": {
         "enum": [
@@ -616,10 +697,7 @@
             "type": "string"
           },
           "code": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "validationErrors": {
             "type": [
@@ -682,6 +760,29 @@
             }
           }
         }
+      },
+      "ValidationFailedErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "required": [
+              "code",
+              "validationErrors"
+            ],
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "validation_failed"
+                ],
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "description": "Validation failed. Please check the validation errors."
       }
     },
     "securitySchemes": {

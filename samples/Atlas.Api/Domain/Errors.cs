@@ -22,6 +22,10 @@ public sealed record CityNameTaken(CityId CityId) : Error;
 [Error("atlas_1004", ResultStatus.Conflict, "The country already has a capital.")]
 public sealed record CapitalTaken(CityId CapitalId) : Error;
 
+/// <summary>A capital is added without its population.</summary>
+[Error("atlas_1006", ResultStatus.Error, "A capital needs its population.")]
+public sealed record CapitalWithoutPopulation : Error;
+
 /// <summary>The country still has cities: delete them first.</summary>
 /// <param name="CityIds">Gets the ids of the country's cities.</param>
 [Error("atlas_1005", ResultStatus.Conflict, "The country still has cities.")]

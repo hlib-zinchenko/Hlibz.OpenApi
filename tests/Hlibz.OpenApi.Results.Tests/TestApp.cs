@@ -51,6 +51,17 @@ internal static class TestApp
         orders.MapDelete("{id:int}", Result<Unit, CancelOrderError> (int id) => new OrderClosed());
     }
 
+    /// <summary>
+    /// Maps <c>POST orders</c>, whose errors share <c>400</c> and <c>403</c> with ambient ones,
+    /// under <c>WithResultResponses()</c> or, with <paramref name="envelope"/>, <c>WithResultEnvelopes()</c>.
+    /// </summary>
+    public static Action<IEndpointRouteBuilder> MapPlaceOrder(bool envelope = false) => app =>
+    {
+        RouteGroupBuilder orders = app.MapGroup("orders");
+        _ = envelope ? orders.WithResultEnvelopes() : orders.WithResultResponses();
+        orders.MapPost(string.Empty, Result<OrderDto, PlaceOrderError> () => new OrderEmpty());
+    };
+
     public static JsonElement Schema(this JsonElement document, string name) =>
         document.GetProperty("components").GetProperty("schemas").GetProperty(name);
 

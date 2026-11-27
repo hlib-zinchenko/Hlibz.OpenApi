@@ -4,13 +4,13 @@
     </PropertyGroup>
     <ItemGroup>
         <!-- Hlibz.OpenApi.UseCases: the use cases it publishes. A minimum, packed as ">=". -->
-        <PackageVersion Include="Hlibz.UseCases" Version="2.0.0-preview.1" />
+        <PackageVersion Include="Hlibz.UseCases" Version="2.0.0-preview.2" />
         <!-- Hlibz.OpenApi.Paging: the attribute it describes. A minimum, packed as ">=". -->
         <PackageVersion Include="Hlibz.Paging" Version="1.1.0" />
         <!--
             Hlibz.OpenApi.Results: the declared errors it documents. A minimum, packed as ">=".
         -->
-        <PackageVersion Include="Hlibz.Results.AspNetCore" Version="3.0.0-preview.1" />
+        <PackageVersion Include="Hlibz.Results.AspNetCore" Version="3.0.0-preview.2" />
         <!-- Sample-only: the ReDoc page the sample app's documents are shown on. -->
         <PackageVersion Include="Hlibz.Redoc.AspNetCore" Version="2.5.0" />
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />

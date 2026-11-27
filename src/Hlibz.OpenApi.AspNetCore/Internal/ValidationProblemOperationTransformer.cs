@@ -14,6 +14,12 @@ namespace Hlibz.OpenApi.Internal;
 /// the endpoint doesn't disable it, and a handler parameter that isn't a service is validatable;
 /// plus one of its own, that the parameter has a rule to break (<see cref="ValidationRules"/>).
 /// </summary>
+/// <remarks>
+/// A <c>400</c> the operation documents already keeps its description and content; the validation
+/// body is added under its content type only when that content type isn't there yet. A typed
+/// error's <c>400</c> (Hlibz.Results' <c>WithResultResponses()</c>, documented before any
+/// transformer runs) would otherwise hide the problem ASP.NET Core answers an invalid request with.
+/// </remarks>
 /// <param name="responseType">The type of the response body.</param>
 /// <param name="contentType">
 /// The content type of the response body; <see langword="null"/> for the one the app answers with.
@@ -35,7 +41,15 @@ internal sealed class ValidationProblemOperationTransformer(
         OpenApiOperationTransformerContext context,
         CancellationToken cancellationToken)
     {
-        if (operation.Responses?.ContainsKey(StatusCode) == true || !IsValidated(context))
+        IOpenApiResponse? declared = null;
+        if (operation.Responses?.TryGetValue(StatusCode, out declared) == true
+            && declared is not OpenApiResponse)
+        {
+            return;
+        }
+
+        string type = contentType ?? AnsweredContentType(context);
+        if (declared?.Content?.ContainsKey(type) == true || !IsValidated(context))
         {
             return;
         }
@@ -44,8 +58,9 @@ internal sealed class ValidationProblemOperationTransformer(
             .GetOrCreateSchemaAsync(responseType, parameterDescription: null, cancellationToken)
             .ConfigureAwait(false);
 
-        OpenApiResponse response = new() { Description = description };
-        response.Content = With(response.Content, contentType ?? AnsweredContentType(context), new OpenApiMediaType
+        // The declared response is the operation's own, so changing it changes no component.
+        OpenApiResponse response = declared as OpenApiResponse ?? new OpenApiResponse { Description = description };
+        response.Content = With(response.Content, type, new OpenApiMediaType
         {
             Schema = Reference(schema, context.Document),
         });
