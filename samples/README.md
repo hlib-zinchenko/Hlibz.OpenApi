@@ -40,5 +40,4 @@ Every build also writes both documents to [`Atlas.Api/openapi`](Atlas.Api/openap
 fails when a build changes them: keep them in step by building before you commit.
 
 The sample targets net11.0 only, references the library projects and gets the other packages
-from NuGet (Hlibz.Results.AspNetCore from the local feed `NuGet.config` names, until 3.0 ships).
-It is never packed.
+from NuGet. It is never packed.
