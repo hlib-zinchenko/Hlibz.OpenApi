@@ -23,9 +23,6 @@ namespace Hlibz.OpenApi.Results.Internal;
 /// </remarks>
 internal sealed class DeclaredErrorsOperationTransformer : IOpenApiOperationTransformer
 {
-    /// <summary>The metadata key ASP.NET Core names a schema's component with.</summary>
-    private const string SchemaIdKey = "x-schema-id";
-
     /// <summary>The ambient errors, in code order.</summary>
     private static readonly ErrorDescriptor[] AmbientErrors =
     [
@@ -195,7 +192,7 @@ internal sealed class DeclaredErrorsOperationTransformer : IOpenApiOperationTran
             .GetOrCreateSchemaAsync(type, parameterDescription: null, cancellationToken)
             .ConfigureAwait(false);
         if (context.Document is not { } document
-            || schema.Metadata?.TryGetValue(SchemaIdKey, out object? value) != true
+            || schema.Metadata?.TryGetValue(SchemaReferences.SchemaIdKey, out object? value) != true
             || value is not string id)
         {
             return null;
@@ -204,6 +201,7 @@ internal sealed class DeclaredErrorsOperationTransformer : IOpenApiOperationTran
         if (document.Components?.Schemas?.ContainsKey(id) != true)
         {
             document.AddComponent(id, schema);
+            SchemaReferences.Resolve(schema, document);
         }
 
         return new Component(id, schema);
@@ -211,12 +209,17 @@ internal sealed class DeclaredErrorsOperationTransformer : IOpenApiOperationTran
 
     /// <summary>
     /// Gets the JSON name of <paramref name="property"/> in <paramref name="schema"/>, as the app's
-    /// naming policy wrote it.
+    /// naming policy wrote it: the same letters in any case, with or without the <c>_</c> or
+    /// <c>-</c> of the snake and kebab case policies (<c>ValidationErrors</c> is
+    /// <c>validation_errors</c>).
     /// </summary>
     private static string PropertyName(OpenApiSchema schema, string property) =>
-        schema.Properties?.Keys.FirstOrDefault(name =>
-            string.Equals(name, property, StringComparison.OrdinalIgnoreCase))
+        schema.Properties?.Keys.FirstOrDefault(name => SameWords(name, property))
         ?? JsonNamingPolicy.CamelCase.ConvertName(property);
+
+    private static bool SameWords(string name, string property) =>
+        name.Where(char.IsLetterOrDigit).Select(char.ToUpperInvariant)
+            .SequenceEqual(property.Select(char.ToUpperInvariant));
 
     /// <summary>A schema and the name of its component.</summary>
     private sealed record Component(string Id, OpenApiSchema Schema);

@@ -5,6 +5,7 @@ using Hlibz.Results.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Hlibz.OpenApi.Results.Tests;
@@ -180,6 +181,44 @@ public sealed class DeclaredErrorsTests
         Assert.Equal(["validation_failed"], own.GetProperty("properties").GetProperty("code").GetProperty("enum").Strings());
         Assert.False(own.GetProperty("properties").TryGetProperty("details", out _));
         Assert.False(document.HasSchema(nameof(ValidationFailed)));
+    }
+
+    [Fact]
+    public async Task ValidationFailedBody_WithSnakeCaseNames_RequiresTheBodysPropertyName()
+    {
+        JsonElement document = await TestApp.DocumentAsync(
+            options => options.AddResults(),
+            TestApp.MapPlaceOrder(),
+            services => services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(json =>
+                json.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower));
+
+        JsonElement own = document.Schema("ValidationFailedErrorResponse").GetProperty("allOf")[1];
+        Assert.Equal(["code", "validation_errors"], own.GetProperty("required").Strings().Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task Details_WithEnumsAndIdComponents_ReferToTheirComponents()
+    {
+        JsonElement document = await TestApp.DocumentAsync(
+            options => options.AddStronglyTypedIds(ids => ids.AsComponents = true).AddResults(),
+            app =>
+            {
+                RouteGroupBuilder orders = app.MapGroup("orders").WithResultResponses();
+                orders.MapGet("{id:guid}/status", OrderStatusDto (Guid id) => new(new OrderId(id), OrderStatus.Open));
+                orders.MapPut("{id:guid}/status", Result<OrderStatusDto, MoveOrderError> (Guid id) =>
+                    new OrderStatusInvalid(new OrderId(id), OrderStatus.Paid, To: null));
+            });
+
+        JsonElement dto = document.Schema(nameof(OrderStatusDto)).GetProperty("properties");
+        JsonElement details = document.Schema(nameof(OrderStatusInvalid)).GetProperty("properties");
+        Assert.Equal(TestApp.Component(nameof(OrderId)), dto.GetProperty("id").Ref());
+        Assert.Equal(TestApp.Component(nameof(OrderStatus)), dto.GetProperty("status").Ref());
+        Assert.Equal(TestApp.Component(nameof(OrderId)), details.GetProperty("orderId").Ref());
+        Assert.Equal(TestApp.Component(nameof(OrderStatus)), details.GetProperty("from").Ref());
+        Assert.Contains(
+            details.GetProperty("to").GetProperty("oneOf").EnumerateArray(),
+            schema => schema.TryGetProperty("$ref", out JsonElement reference)
+                      && reference.GetString() == TestApp.Component(nameof(OrderStatus)));
     }
 
     [Fact]

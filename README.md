@@ -462,11 +462,13 @@ app.MapGroup("api/admin")
   (`ValidationFailed`, `Unauthorized`, `Forbidden`, `ConcurrencyConflict`, `RateLimited`,
   `Unavailable`), so a status code with declared errors lists the ones the app sends with it too
   (`ResultHttpOptions.StatusCodes`): a declared `400` is a `oneOf` with
-  `ValidationFailedErrorResponse` (`code` and `validationErrors` required), a declared `403` with
+  `ValidationFailedErrorResponse` (`code` and `validationErrors` required, named as the app's
+  naming policy writes them: `validation_errors` in snake case), a declared `403` with
   `ForbiddenErrorResponse`, a declared `409` with `ConcurrencyConflictErrorResponse`. Without them a generated client
   would miss the codes validation and the authorization gate send.
 - **The rest of the document applies.** The details schema is an ordinary component: XML
-  summaries, strongly-typed IDs and rules describe it as they do any other.
+  summaries, strongly-typed IDs and rules describe it as they do any other, and an enum or an ID
+  component (`AsComponents`) in it is a `$ref`, as everywhere else.
 - **Left as they are:** a status code the endpoint documents itself
   (`Produces<ProblemDetails>(409)`); a status code only ambient errors are sent with (the
   error code catalog lists those); an envelope of the app's own (`CreateEnvelope`); errors sent as `200`

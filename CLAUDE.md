@@ -96,7 +96,10 @@ error's body component, `{ErrorSchemaId}{BodySchemaId}`: `allOf` of the body and
 narrowing `code` (an `enum` of one) and `details` (a `$ref` to the error's own schema, only when
 `ErrorDescriptor.HasDetails`), described by the error's message; several errors are a `oneOf`
 with a `discriminator` on `code`. Property names come from the body's schema (the app's naming
-policy). A status code with declared errors also lists the ambient errors the app's
+policy; matched ignoring case, `_` and `-`). The schemas `GetOrCreateSchemaAsync` gives an
+operation transformer are unresolved (nested types inline, tagged `x-schema-id`), so
+`Internal/SchemaReferences` turns them into `$ref`s, as ASP.NET Core does for its own (nullable:
+`oneOf` with `null`; `x-ref-description` on the reference). A status code with declared errors also lists the ambient errors the app's
 `ResultHttpOptions.StatusCodes` sends with it (a `Result<T, TError>` accepts any of them, and
 `WithResultResponses()` documents its `400`/`403` before any transformer runs, so
 `AddUseCases()` sees a declared `400` and adds nothing; `AddValidationProblems()` adds its
