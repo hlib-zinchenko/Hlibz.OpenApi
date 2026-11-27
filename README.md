@@ -6,9 +6,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/hlib-zinchenko/Hlibz.OpenApi/blob/main/LICENSE)<br>
 [![Hlibz.OpenApi.AspNetCore](https://img.shields.io/nuget/v/Hlibz.OpenApi.AspNetCore?label=Hlibz.OpenApi.AspNetCore)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)
 [![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.AspNetCore?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.AspNetCore)<br>
-[![Hlibz.OpenApi.UseCases](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.UseCases?label=Hlibz.OpenApi.UseCases)](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases)<br>
-[![Hlibz.OpenApi.Paging](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.Paging?label=Hlibz.OpenApi.Paging)](https://www.nuget.org/packages/Hlibz.OpenApi.Paging)<br>
-[![Hlibz.OpenApi.Results](https://img.shields.io/nuget/vpre/Hlibz.OpenApi.Results?label=Hlibz.OpenApi.Results)](https://www.nuget.org/packages/Hlibz.OpenApi.Results)
+[![Hlibz.OpenApi.UseCases](https://img.shields.io/nuget/v/Hlibz.OpenApi.UseCases?label=Hlibz.OpenApi.UseCases)](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases)
+[![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.UseCases?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.UseCases)<br>
+[![Hlibz.OpenApi.Paging](https://img.shields.io/nuget/v/Hlibz.OpenApi.Paging?label=Hlibz.OpenApi.Paging)](https://www.nuget.org/packages/Hlibz.OpenApi.Paging)
+[![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.Paging?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.Paging)<br>
+[![Hlibz.OpenApi.Results](https://img.shields.io/nuget/v/Hlibz.OpenApi.Results?label=Hlibz.OpenApi.Results)](https://www.nuget.org/packages/Hlibz.OpenApi.Results)
+[![downloads](https://img.shields.io/nuget/dt/Hlibz.OpenApi.Results?label=downloads)](https://www.nuget.org/packages/Hlibz.OpenApi.Results)
 
 Transformers for [Microsoft.AspNetCore.OpenApi](https://learn.microsoft.com/aspnet/core/fundamentals/openapi/overview)
 (`AddOpenApi()` / `MapOpenApi()`) that fill the gaps between what your API checks and what its
@@ -46,6 +49,29 @@ builder.Services.AddOpenApi("v1", options => options
 
 app.MapOpenApi();
 ```
+
+## A family of packages
+
+Hlibz.OpenApi is one of five packages I build to set up new .NET APIs the way I want them:
+[Hlibz.Results](https://github.com/hlib-zinchenko/Hlibz.Results),
+[Hlibz.UseCases](https://github.com/hlib-zinchenko/Hlibz.UseCases),
+[Hlibz.MinimalApi.Endpoints](https://github.com/hlib-zinchenko/Hlibz.MinimalApi.Endpoints),
+**Hlibz.OpenApi** and [Hlibz.Paging](https://github.com/hlib-zinchenko/Hlibz.Paging). Each one works
+on its own, and they work best together:
+[Hlibz.Stack](https://github.com/hlib-zinchenko/Hlibz.Stack) is an API where all five meet, along
+with [Hlibz.Redoc](https://github.com/hlib-zinchenko/Hlibz.Redoc) and
+[Hlibz.McpDocs.AspNetCore](https://github.com/hlib-zinchenko/Hlibz.McpDocs.AspNetCore).
+
+Because they follow what my projects need, new minor and major versions come often. When .NET gives
+me a better way to do something, it goes into a new major straight away: Hlibz.Results 2.0 came a
+week after 1.0, and the first 3.0 preview, built on C# 15 unions, nine days after 2.0. Breaking
+changes only ever come in a major, its
+[release notes](https://github.com/hlib-zinchenko/Hlibz.OpenApi/releases) list them first, and older
+versions stay on NuGet, so read the notes before you move up a major.
+
+You're welcome to use them, and to
+[open an issue](https://github.com/hlib-zinchenko/Hlibz.OpenApi/issues) when something is wrong or
+missing.
 
 ## XML documentation
 
@@ -558,7 +584,7 @@ major) and set where they go:
   Swashbuckle uses filters instead, so a port would be a separate `Hlibz.OpenApi.Swashbuckle`
   package.
 
-## Sample
+## Samples
 
 [`samples/Atlas.Api`](samples/README.md) is a small geography API on plain minimal API endpoints
 that uses every feature of Hlibz.OpenApi.AspNetCore and Hlibz.OpenApi.Results, rendered by
@@ -569,19 +595,6 @@ with a `.http` file showing the API enforces what the documents say.
 ```bash
 dotnet run --project samples/Atlas.Api   # then open http://localhost:5290/api-docs
 ```
-
-## Related packages
-
-- [Hlibz.MinimalApi.Endpoints](https://www.nuget.org/packages/Hlibz.MinimalApi.Endpoints):
-  minimal API endpoints as classes, grouped and checked at build time; each class's `<summary>`
-  becomes its operation description.
-- [Hlibz.Results.AspNetCore](https://www.nuget.org/packages/Hlibz.Results.AspNetCore): typed
-  errors and one error body for minimal APIs and controllers, published by
-  `Hlibz.OpenApi.Results`.
-- [Hlibz.Paging](https://www.nuget.org/packages/Hlibz.Paging): paging and sorting for list
-  endpoints, described by `Hlibz.OpenApi.Paging`.
-- [Hlibz.UseCases](https://www.nuget.org/packages/Hlibz.UseCases): use cases with generated
-  pipelines and DataAnnotations validation, published by `Hlibz.OpenApi.UseCases`.
 
 ## Versioning
 
